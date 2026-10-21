@@ -1,99 +1,107 @@
 <?php // Support Page ?>
-<h2 class="text-2xl font-bold mb-8">Support Center</h2>
+<h4 class="fw-bold mb-4">Support Center</h4>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="row g-3">
     <!-- Contact Form -->
-    <div class="lg:col-span-2 bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6">
-        <h3 class="text-lg font-bold mb-6">Submit a Support Ticket</h3>
-        
-        <form class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium mb-2">Subject</label>
-                <input type="text" placeholder="Brief description of your issue" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+    <div class="col-lg-8">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Submit a Support Ticket</h5>
+
+                <form class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label small mb-1">Subject</label>
+                        <input type="text" placeholder="Brief description of your issue" class="form-control bg-dark border-secondary text-light">
+                    </div>
+
+                    <div>
+                        <label class="form-label small mb-1">Category</label>
+                        <select class="form-select bg-dark border-secondary text-light">
+                            <option>Technical Issue</option>
+                            <option>Billing Question</option>
+                            <option>Feature Request</option>
+                            <option>Account Help</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label small mb-1">Priority</label>
+                        <select class="form-select bg-dark border-secondary text-light">
+                            <option>Low</option>
+                            <option>Medium</option>
+                            <option>High</option>
+                            <option>Critical</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label small mb-1">Description</label>
+                        <textarea rows="6" placeholder="Provide detailed information about your issue..." class="form-control bg-dark border-secondary text-light"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary fw-medium">
+                        <i class="mdi mdi-send me-2"></i> Submit Ticket
+                    </button>
+                </form>
             </div>
-            
-            <div>
-                <label class="block text-sm font-medium mb-2">Category</label>
-                <select class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white focus:outline-none focus:border-blue-500">
-                    <option>Technical Issue</option>
-                    <option>Billing Question</option>
-                    <option>Feature Request</option>
-                    <option>Account Help</option>
-                    <option>Other</option>
-                </select>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium mb-2">Priority</label>
-                <select class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white focus:outline-none focus:border-blue-500">
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                    <option>Critical</option>
-                </select>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium mb-2">Description</label>
-                <textarea rows="6" placeholder="Provide detailed information about your issue..." class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"></textarea>
-            </div>
-            
-            <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
-                <i class="fas fa-paper-plane mr-2"></i> Submit Ticket
-            </button>
-        </form>
+        </div>
     </div>
-    
+
     <!-- Quick Help -->
-    <div class="space-y-6">
+    <div class="col-lg-4 d-flex flex-column gap-3">
         <!-- Contact Info -->
-        <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6">
-            <h3 class="text-lg font-bold mb-4">Contact Us</h3>
-            
-            <div class="space-y-4">
-                <div class="flex items-start gap-3">
-                    <i class="fas fa-envelope text-blue-400 mt-1"></i>
-                    <div>
-                        <p class="text-sm font-medium">Email</p>
-                        <p class="text-sm text-gray-400 mt-1">support@licenseauth.com</p>
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Contact Us</h5>
+
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="mdi mdi-email-outline text-primary mt-1"></i>
+                        <div>
+                            <p class="small fw-medium mb-0">Email</p>
+                            <p class="small text-muted mt-1 mb-0">support@licenseauth.com</p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="flex items-start gap-3">
-                    <i class="fab fa-discord text-[#5865F2] mt-1"></i>
-                    <div>
-                        <p class="text-sm font-medium">Discord</p>
-                        <p class="text-sm text-gray-400 mt-1">Join our community</p>
+
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fab fa-discord mt-1" style="color:#5865F2"></i>
+                        <div>
+                            <p class="small fw-medium mb-0">Discord</p>
+                            <p class="small text-muted mt-1 mb-0">Join our community</p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="flex items-start gap-3">
-                    <i class="fas fa-clock text-green-400 mt-1"></i>
-                    <div>
-                        <p class="text-sm font-medium">Response Time</p>
-                        <p class="text-sm text-gray-400 mt-1">Usually within 24 hours</p>
+
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="mdi mdi-clock-outline text-success mt-1"></i>
+                        <div>
+                            <p class="small fw-medium mb-0">Response Time</p>
+                            <p class="small text-muted mt-1 mb-0">Usually within 24 hours</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <!-- FAQ -->
-        <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6">
-            <h3 class="text-lg font-bold mb-4">Common Questions</h3>
-            
-            <div class="space-y-3">
-                <a href="#" class="block p-3 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition text-sm">
-                    <i class="fas fa-question-circle text-blue-400 mr-2"></i>
-                    How do I generate a license?
-                </a>
-                <a href="#" class="block p-3 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition text-sm">
-                    <i class="fas fa-question-circle text-blue-400 mr-2"></i>
-                    API integration guide
-                </a>
-                <a href="#" class="block p-3 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition text-sm">
-                    <i class="fas fa-question-circle text-blue-400 mr-2"></i>
-                    Reset password
-                </a>
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Common Questions</h5>
+
+                <div class="d-flex flex-column gap-2">
+                    <a href="#" class="btn btn-secondary btn-sm text-start">
+                        <i class="mdi mdi-help-circle-outline text-primary me-2"></i>
+                        How do I generate a license?
+                    </a>
+                    <a href="#" class="btn btn-secondary btn-sm text-start">
+                        <i class="mdi mdi-help-circle-outline text-primary me-2"></i>
+                        API integration guide
+                    </a>
+                    <a href="#" class="btn btn-secondary btn-sm text-start">
+                        <i class="mdi mdi-help-circle-outline text-primary me-2"></i>
+                        Reset password
+                    </a>
+                </div>
             </div>
         </div>
     </div>

@@ -33,7 +33,7 @@ A comprehensive, professional license authentication and management system built
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/sunnysharma4002/LicenseCore.git
+git clone https://github.com/yourusername/LicenseCore.git
 cd LicenseCore
 ```
 

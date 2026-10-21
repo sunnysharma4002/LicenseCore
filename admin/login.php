@@ -230,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             
             <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
-                © 2021 - 2025 LicenseAuth. Made with ❤ by DeadShot
+                © 2021 - 2025 LicenseAuth. Made with ❤ by FENIX
             </div>
         </div>
     </div>

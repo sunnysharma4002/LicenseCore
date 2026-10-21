@@ -43,7 +43,7 @@ $users_query = $conn->query("
         a.*,
         (SELECT COUNT(*) FROM apps WHERE ownerid = a.ownerid) as app_count,
         (SELECT COUNT(*) FROM `keys` k JOIN apps app ON k.app = app.secret WHERE app.ownerid = a.ownerid AND k.status = 'active') as key_count,
-        (SELECT COUNT(*) FROM end_users eu JOIN apps app ON eu.app = app.secret WHERE app.ownerid = a.ownerid) as end_user_count
+        (SELECT COUNT(*) FROM users eu JOIN apps app ON eu.app = app.secret WHERE app.ownerid = a.ownerid) as end_user_count
     FROM accounts a
     ORDER BY a.created_at DESC
 ");
@@ -51,108 +51,100 @@ $users_query = $conn->query("
 
 <!-- Success/Error Messages -->
 <?php if (!empty($action_error)): ?>
-<div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-exclamation-triangle text-red-400"></i>
-        <p class="text-red-300 font-medium"><?= htmlspecialchars($action_error) ?></p>
-    </div>
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-alert text-danger"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_error) ?></p>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($action_success)): ?>
-<div class="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-check-circle text-green-400"></i>
-        <p class="text-green-300 font-medium"><?= htmlspecialchars($action_success) ?></p>
-    </div>
+<div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-check-circle-outline text-success"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_success) ?></p>
 </div>
 <?php endif; ?>
 
 <!-- User Management Table -->
-<div class="stat-card rounded-lg">
-    <div class="p-6 border-b border-[#2a2a4e]">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold">User Management</h3>
-            <div class="text-sm text-gray-400">
-                Total Users: <span class="text-blue-400 font-semibold"><?= $users_query->num_rows ?></span>
-            </div>
+<div class="card bg-dark border-secondary">
+    <div class="card-header border-secondary bg-transparent px-3 py-2">
+        <div class="d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0">User Management</h5>
+            <small class="text-muted">
+                Total Users: <span class="text-primary fw-semibold"><?= $users_query->num_rows ?></span>
+            </small>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-[#0f0f1a]">
+    <div class="table-responsive">
+        <table class="table table-dark table-borderless table-hover align-middle mb-0">
+            <thead class="table-secondary">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Stats</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Joined</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">User</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Role</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Stats</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Status</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Joined</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-[#2a2a4e]">
+            <tbody>
                 <?php while ($user_data = $users_query->fetch_assoc()): ?>
-                <tr class="hover:bg-[#262641] transition">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center mr-3">
-                                <i class="fas fa-user text-white text-sm"></i>
+                <tr>
+                    <td class="px-3 py-1">
+                        <div class="d-flex align-items-center">
+                            <div style="width:40px;height:40px" class="rounded-circle bg-primary bg-opacity-25 d-flex align-items-center justify-content-center me-2">
+                                <i class="mdi mdi-account text-primary small"></i>
                             </div>
                             <div>
-                                <div class="font-semibold text-sm text-white"><?= htmlspecialchars($user_data['username']) ?></div>
-                                <div class="text-xs text-gray-400"><?= htmlspecialchars($user_data['email']) ?></div>
-                                <div class="text-xs text-gray-500 font-mono">ID: <?= htmlspecialchars(substr($user_data['ownerid'], 0, 12)) ?>...</div>
+                                <div class="fw-semibold small"><?= htmlspecialchars($user_data['username']) ?></div>
+                                <div class="text-muted small"><?= htmlspecialchars($user_data['email']) ?></div>
+                                <div class="text-secondary small font-monospace">ID: <?= htmlspecialchars(substr($user_data['ownerid'], 0, 12)) ?>...</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded-full capitalize">
-                            <?= htmlspecialchars($user_data['role']) ?>
-                        </span>
+                    <td class="px-3 py-1">
+                        <span class="badge bg-primary"><?= htmlspecialchars($user_data['role']) ?></span>
                     </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm">
-                            <div class="flex items-center gap-4">
-                                <span class="text-purple-400"><i class="fas fa-cube mr-1"></i><?= $user_data['app_count'] ?></span>
-                                <span class="text-green-400"><i class="fas fa-key mr-1"></i><?= $user_data['key_count'] ?></span>
-                                <span class="text-yellow-400"><i class="fas fa-users mr-1"></i><?= $user_data['end_user_count'] ?></span>
-                            </div>
+                    <td class="px-3 py-1">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-info small"><i class="mdi mdi-cube-outline me-1"></i><?= $user_data['app_count'] ?></span>
+                            <span class="text-success small"><i class="mdi mdi-key me-1"></i><?= $user_data['key_count'] ?></span>
+                            <span class="text-warning small"><i class="mdi mdi-account-group me-1"></i><?= $user_data['end_user_count'] ?></span>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-3 py-1">
                         <?php if ($user_data['banned']): ?>
-                            <span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Banned</span>
+                            <span class="badge bg-danger">Banned</span>
                             <?php if (!empty($user_data['ban_reason'])): ?>
-                                <div class="text-xs text-gray-500 mt-1 max-w-32 truncate" title="<?= htmlspecialchars($user_data['ban_reason']) ?>">
+                                <div class="text-muted small text-truncate mt-1" style="max-width:120px" title="<?= htmlspecialchars($user_data['ban_reason']) ?>">
                                     <?= htmlspecialchars($user_data['ban_reason']) ?>
                                 </div>
                             <?php endif; ?>
                         <?php else: ?>
-                            <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Active</span>
+                            <span class="badge bg-success">Active</span>
                         <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-400">
+                    <td class="px-3 py-1 text-muted small">
                         <?= date('M j, Y', strtotime($user_data['created_at'])) ?>
                         <?php if (!empty($user_data['last_login'])): ?>
-                            <div class="text-xs text-gray-500">
+                            <div class="text-secondary small">
                                 Last login: <?= date('M j, H:i', strtotime($user_data['last_login'])) ?>
                             </div>
                         <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
+                    <td class="px-3 py-1">
+                        <div class="d-flex align-items-center gap-1">
                             <?php if ($user_data['banned']): ?>
-                                <form method="POST" class="inline">
+                                <form method="POST" class="d-inline">
                                     <input type="hidden" name="action" value="unban_user">
                                     <input type="hidden" name="username" value="<?= htmlspecialchars($user_data['username']) ?>">
-                                    <button type="submit" class="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded hover:bg-green-500/30 transition" onclick="return confirm('Unban this user?')">
-                                        <i class="fas fa-user-check mr-1"></i>Unban
+                                    <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Unban this user?')">
+                                        <i class="mdi mdi-account-check me-1"></i>Unban
                                     </button>
                                 </form>
                             <?php else: ?>
-                                <button onclick="openBanModal('<?= htmlspecialchars($user_data['username']) ?>')" class="px-3 py-1 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30 transition">
-                                    <i class="fas fa-ban mr-1"></i>Ban
+                                <button onclick="openBanModal('<?= htmlspecialchars($user_data['username']) ?>')" class="btn btn-sm btn-outline-danger">
+                                    <i class="mdi mdi-ban me-1"></i>Ban
                                 </button>
                             <?php endif; ?>
                         </div>
@@ -164,42 +156,40 @@ $users_query = $conn->query("
     </div>
 
     <?php if ($users_query->num_rows === 0): ?>
-        <div class="p-12 text-center text-gray-400">
-            <i class="fas fa-users text-3xl mb-3"></i>
-            <p>No users found</p>
+        <div class="p-3 text-center text-muted">
+            <i class="mdi mdi-account-group fs-1 mb-2"></i>
+            <p class="mb-0">No users found</p>
         </div>
     <?php endif; ?>
 </div>
 
 <!-- Ban User Modal -->
-<div id="banUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6 w-full max-w-md mx-4">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold">Ban User</h3>
-            <button onclick="closeModal('banUserModal')" class="text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
-            </button>
+<div class="modal fade" id="banUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Ban User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="ban_user">
+                    <input type="hidden" name="username" id="banUsername" value="">
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Username</label>
+                        <input type="text" id="banUsernameDisplay" class="form-control bg-dark text-white border-secondary" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Ban Reason</label>
+                        <textarea name="reason" rows="3" class="form-control bg-dark text-white border-secondary" placeholder="Reason for banning this user" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Ban User</button>
+                </div>
+            </form>
         </div>
-        <form method="POST">
-            <input type="hidden" name="action" value="ban_user">
-            <input type="hidden" name="username" id="banUsername" value="">
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">Username</label>
-                <input type="text" id="banUsernameDisplay" class="w-full p-3 bg-[#0f0f1a] border border-[#2a2a4e] rounded-lg text-white" readonly>
-            </div>
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-2">Ban Reason</label>
-                <textarea name="reason" rows="3" class="w-full p-3 bg-[#0f0f1a] border border-[#2a2a4e] rounded-lg text-white" placeholder="Reason for banning this user" required></textarea>
-            </div>
-            <div class="flex gap-3">
-                <button type="button" onclick="closeModal('banUserModal')" class="flex-1 bg-gray-500/20 text-gray-400 font-medium py-3 px-4 rounded-lg transition hover:bg-gray-500/30">
-                    Cancel
-                </button>
-                <button type="submit" class="flex-1 bg-red-500/20 text-red-400 font-medium py-3 px-4 rounded-lg transition hover:bg-red-500/30">
-                    Ban User
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -207,18 +197,12 @@ $users_query = $conn->query("
 function openBanModal(username) {
     document.getElementById('banUsername').value = username;
     document.getElementById('banUsernameDisplay').value = username;
-    document.getElementById('banUserModal').classList.remove('hidden');
+    var modal = new bootstrap.Modal(document.getElementById('banUserModal'));
+    modal.show();
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = event.target;
-    if (modal.classList.contains('bg-black')) {
-        modal.classList.add('hidden');
-    }
+    var modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+    if (modal) modal.hide();
 }
 </script>

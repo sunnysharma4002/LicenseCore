@@ -4,263 +4,279 @@
 
 <!-- Success/Error Messages -->
 <?php if (!empty($action_error)): ?>
-<div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-exclamation-triangle text-red-400"></i>
-        <p class="text-red-300 font-medium"><?= htmlspecialchars($action_error) ?></p>
-    </div>
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-alert text-danger"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_error) ?></p>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($action_success)): ?>
-<div class="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-check-circle text-green-400"></i>
-        <p class="text-green-300 font-medium"><?= htmlspecialchars($action_success) ?></p>
-    </div>
+<div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-check-circle-outline text-success"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_success) ?></p>
 </div>
 <?php endif; ?>
 
 <!-- Statistics Section -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="row g-3 mb-3">
     <!-- Total Users -->
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Total Users</p>
-                <p class="text-3xl font-bold mt-2 text-blue-400"><?= number_format($stats['total_users']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <i class="fas fa-users text-blue-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Total Users</p>
+                        <h3 class="text-primary fw-bold mb-0"><?= number_format($stats['total_users']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-primary bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-account-group text-primary fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">
+                    <i class="mdi mdi-shield-account text-danger me-1"></i>
+                    <?= number_format($stats['banned_users']) ?> banned
+                </small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4">
-            <i class="fas fa-user-shield text-red-400 mr-1"></i>
-            <?= number_format($stats['banned_users']) ?> banned
-        </p>
     </div>
 
     <!-- Total Applications -->
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Total Applications</p>
-                <p class="text-3xl font-bold mt-2 text-purple-400"><?= number_format($stats['total_apps']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <i class="fas fa-cubes text-purple-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Total Applications</p>
+                        <h3 class="text-info fw-bold mb-0"><?= number_format($stats['total_apps']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-info bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-cubes text-info fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-arrow-up text-success me-1"></i> Active systems</small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-arrow-up text-green-400 mr-1"></i> Active systems</p>
     </div>
 
     <!-- Active License Keys -->
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Active Licenses</p>
-                <p class="text-3xl font-bold mt-2 text-green-400"><?= number_format($stats['total_keys']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <i class="fas fa-key text-green-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Active Licenses</p>
+                        <h3 class="text-success fw-bold mb-0"><?= number_format($stats['total_keys']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-success bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-key text-success fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-arrow-up text-success me-1"></i> Valid keys</small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-arrow-up text-green-400 mr-1"></i> Valid keys</p>
     </div>
 
     <!-- Total End Users -->
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">End Users</p>
-                <p class="text-3xl font-bold mt-2 text-yellow-400"><?= number_format($stats['total_end_users']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                <i class="fas fa-user-friends text-yellow-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">End Users</p>
+                        <h3 class="text-warning fw-bold mb-0"><?= number_format($stats['total_users']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-warning bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-account-group text-warning fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-clock-outline text-primary me-1"></i> Last 24h: <?= number_format($stats['recent_logs']) ?> logs</small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-clock text-blue-400 mr-1"></i> Last 24h: <?= number_format($stats['recent_logs']) ?> logs</p>
     </div>
 </div>
 
 <!-- Recent Activity & Quick Actions -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="row g-3">
     <!-- Recent Applications -->
-    <div class="lg:col-span-2 stat-card rounded-lg">
-        <div class="p-6 border-b border-[#2a2a4e]">
-            <h3 class="text-lg font-bold">Recent Applications</h3>
-        </div>
-        <div class="divide-y divide-[#2a2a4e]">
-            <?php if ($recent_apps->num_rows > 0): ?>
-                <?php while ($app = $recent_apps->fetch_assoc()): ?>
-                <div class="p-6 hover:bg-[#262641] transition cursor-pointer">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                <i class="fas fa-cube text-white"></i>
+    <div class="col-lg-8">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary bg-transparent px-3 py-2">
+                <h5 class="fw-bold mb-0">Recent Applications</h5>
+            </div>
+            <div>
+                <?php if ($recent_apps->num_rows > 0): ?>
+                    <?php while ($app = $recent_apps->fetch_assoc()): ?>
+                    <div class="px-3 py-2 border-bottom border-secondary">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:48px;height:48px" class="rounded bg-primary bg-opacity-25 d-flex align-items-center justify-content-center">
+                                    <i class="mdi mdi-cube-outline text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-semibold mb-0"><?= htmlspecialchars($app['name']) ?></h6>
+                                    <small class="text-muted">Owner: <?= htmlspecialchars($app['owner_name']) ?></small>
+                                </div>
                             </div>
-                            <div>
-                                <h4 class="font-semibold"><?= htmlspecialchars($app['name']) ?></h4>
-                                <p class="text-xs text-gray-400 mt-1">Owner: <?= htmlspecialchars($app['owner_name']) ?></p>
+                            <div class="text-end">
+                                <small class="fw-semibold text-primary"><?= htmlspecialchars(substr($app['secret'], 0, 12)) ?>...</small><br>
+                                <small class="text-muted"><?= date('M j, H:i', strtotime($app['created_at'])) ?></small>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-semibold text-blue-400"><?= htmlspecialchars(substr($app['secret'], 0, 12)) ?>...</p>
-                            <p class="text-xs text-gray-400"><?= date('M j, H:i', strtotime($app['created_at'])) ?></p>
                         </div>
                     </div>
-                </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-12 text-center text-gray-400">
-                    <i class="fas fa-inbox text-3xl mb-3"></i>
-                    <p>No applications yet</p>
-                </div>
-            <?php endif; ?>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="p-3 text-center text-muted">
+                        <i class="mdi mdi-inbox fs-1 mb-2"></i>
+                        <p class="mb-0">No applications yet</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
     <!-- Quick Actions -->
-    <div class="stat-card rounded-lg p-6">
-        <h3 class="text-lg font-bold mb-6">Quick Actions</h3>
-        <div class="space-y-3">
-            <button onclick="openModal('createAppModal')" class="w-full p-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg transition text-center font-medium text-white">
-                <i class="fas fa-plus mr-2"></i> Create App
-            </button>
-            <a href="?page=users" class="block p-4 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition text-center font-medium">
-                <i class="fas fa-users mr-2"></i> Manage Users
-            </a>
-            <a href="?page=applications" class="block p-4 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition text-center font-medium">
-                <i class="fas fa-cubes mr-2"></i> View Apps
-            </a>
-            <a href="?page=logs" class="block p-4 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition text-center font-medium">
-                <i class="fas fa-history mr-2"></i> System Logs
-            </a>
+    <div class="col-lg-4">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3">Quick Actions</h5>
+                <div class="d-flex flex-column gap-2">
+                    <button type="button" class="btn btn-primary w-100 text-start" data-bs-toggle="modal" data-bs-target="#createAppModal">
+                        <i class="mdi mdi-plus me-2"></i> Create App
+                    </button>
+                    <a href="?page=users" class="btn btn-secondary w-100 text-start">
+                        <i class="mdi mdi-account-group me-2"></i> Manage Users
+                    </a>
+                    <a href="?page=applications" class="btn btn-secondary w-100 text-start">
+                        <i class="mdi mdi-cubes me-2"></i> View Apps
+                    </a>
+                    <a href="?page=logs" class="btn btn-secondary w-100 text-start">
+                        <i class="mdi mdi-history me-2"></i> System Logs
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Recent Users & License Keys -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+<div class="row g-3 mt-3">
     <!-- Recent Users -->
-    <div class="stat-card rounded-lg">
-        <div class="p-6 border-b border-[#2a2a4e]">
-            <h3 class="text-lg font-bold">Recent Users</h3>
-        </div>
-        <div class="divide-y divide-[#2a2a4e]">
-            <?php if ($recent_users->num_rows > 0): ?>
-                <?php while ($user_data = $recent_users->fetch_assoc()): ?>
-                <div class="p-4 hover:bg-[#262641] transition">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                                <i class="fas fa-user text-white text-sm"></i>
+    <div class="col-lg-6">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary bg-transparent px-3 py-2">
+                <h5 class="fw-bold mb-0">Recent Users</h5>
+            </div>
+            <div>
+                <?php if ($recent_users->num_rows > 0): ?>
+                    <?php while ($user_data = $recent_users->fetch_assoc()): ?>
+                    <div class="px-3 py-2 border-bottom border-secondary">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:40px;height:40px" class="rounded-circle bg-success bg-opacity-25 d-flex align-items-center justify-content-center">
+                                    <i class="mdi mdi-account text-success small"></i>
+                                </div>
+                                <div>
+                                    <p class="fw-semibold small mb-0"><?= htmlspecialchars($user_data['username']) ?></p>
+                                    <small class="text-muted"><?= htmlspecialchars($user_data['email']) ?></small>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-semibold text-sm"><?= htmlspecialchars($user_data['username']) ?></p>
-                                <p class="text-xs text-gray-400"><?= htmlspecialchars($user_data['email']) ?></p>
+                            <div class="text-end">
+                                <?php if ($user_data['banned']): ?>
+                                    <span class="badge bg-danger">Banned</span>
+                                <?php else: ?>
+                                    <span class="badge bg-success">Active</span>
+                                <?php endif; ?>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <?php if ($user_data['banned']): ?>
-                                <span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Banned</span>
-                            <?php else: ?>
-                                <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Active</span>
-                            <?php endif; ?>
                         </div>
                     </div>
-                </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-12 text-center text-gray-400">
-                    <i class="fas fa-users text-3xl mb-3"></i>
-                    <p>No users yet</p>
-                </div>
-            <?php endif; ?>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="p-3 text-center text-muted">
+                        <i class="mdi mdi-account-group fs-1 mb-2"></i>
+                        <p class="mb-0">No users yet</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
     <!-- Recent License Keys -->
-    <div class="stat-card rounded-lg">
-        <div class="p-6 border-b border-[#2a2a4e]">
-            <h3 class="text-lg font-bold">Recent License Keys</h3>
-        </div>
-        <div class="divide-y divide-[#2a2a4e]">
-            <?php if ($recent_keys->num_rows > 0): ?>
-                <?php while ($key = $recent_keys->fetch_assoc()): ?>
-                <div class="p-4 hover:bg-[#262641] transition">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                                <i class="fas fa-key text-white text-sm"></i>
+    <div class="col-lg-6">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary bg-transparent px-3 py-2">
+                <h5 class="fw-bold mb-0">Recent License Keys</h5>
+            </div>
+            <div>
+                <?php if ($recent_keys->num_rows > 0): ?>
+                    <?php while ($key = $recent_keys->fetch_assoc()): ?>
+                    <div class="px-3 py-2 border-bottom border-secondary">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:40px;height:40px" class="rounded bg-warning bg-opacity-25 d-flex align-items-center justify-content-center">
+                                    <i class="mdi mdi-key text-warning small"></i>
+                                </div>
+                                <div>
+                                    <p class="font-monospace small fw-semibold mb-0"><?= htmlspecialchars(substr($key['license_key'], 0, 20)) ?>...</p>
+                                    <small class="text-muted"><?= htmlspecialchars($key['app_name']) ?></small>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-mono text-sm font-semibold"><?= htmlspecialchars(substr($key['license_key'], 0, 20)) ?>...</p>
-                                <p class="text-xs text-gray-400"><?= htmlspecialchars($key['app_name']) ?></p>
+                            <div class="text-end">
+                                <span class="badge bg-<?= $key['status'] === 'active' ? 'success' : 'danger' ?>"><?= htmlspecialchars($key['status']) ?></span>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="px-2 py-1 bg-<?= $key['status'] === 'active' ? 'green' : 'red' ?>-500/20 text-<?= $key['status'] === 'active' ? 'green' : 'red' ?>-400 text-xs rounded-full capitalize">
-                                <?= htmlspecialchars($key['status']) ?>
-                            </span>
                         </div>
                     </div>
-                </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-12 text-center text-gray-400">
-                    <i class="fas fa-key text-3xl mb-3"></i>
-                    <p>No license keys yet</p>
-                </div>
-            <?php endif; ?>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="p-3 text-center text-muted">
+                        <i class="mdi mdi-key fs-1 mb-2"></i>
+                        <p class="mb-0">No license keys yet</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Create App Modal -->
-<div id="createAppModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6 w-full max-w-md mx-4">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold">Create New Application</h3>
-            <button onclick="closeModal('createAppModal')" class="text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
-            </button>
+<div class="modal fade" id="createAppModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">Create New Application</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="create_app">
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Application Name*</label>
+                        <input type="text" name="app_name" class="form-control bg-dark text-white border-secondary" placeholder="My Awesome App" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Owner ID*</label>
+                        <input type="text" name="ownerid" class="form-control bg-dark text-white border-secondary" placeholder="Owner ID" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium text-muted">Description</label>
+                        <textarea name="description" rows="3" class="form-control bg-dark text-white border-secondary" placeholder="Describe your application"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="mdi mdi-plus me-2"></i>Create Application
+                    </button>
+                </form>
+            </div>
         </div>
-        <form method="POST">
-            <input type="hidden" name="action" value="create_app">
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">Application Name*</label>
-                <input type="text" name="app_name" class="w-full p-3 bg-[#0f0f1a] border border-[#2a2a4e] rounded-lg text-white" placeholder="My Awesome App" required>
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-2">Owner ID*</label>
-                <input type="text" name="ownerid" class="w-full p-3 bg-[#0f0f1a] border border-[#2a2a4e] rounded-lg text-white" placeholder="Owner ID" required>
-            </div>
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-2">Description</label>
-                <textarea name="description" rows="3" class="w-full p-3 bg-[#0f0f1a] border border-[#2a2a4e] rounded-lg text-white" placeholder="Describe your application"></textarea>
-            </div>
-            <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-lg transition">
-                Create Application
-            </button>
-        </form>
     </div>
 </div>
 
 <script>
 function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
+    var modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = event.target;
-    if (modal.classList.contains('bg-black')) {
-        modal.classList.add('hidden');
-    }
+    var modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+    if (modal) modal.hide();
 }
 </script>

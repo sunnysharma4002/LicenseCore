@@ -17,12 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($password)) {
         $error = 'Password is required';
     } else {
-        // Check rate limiting
         $identifier = 'login:' . get_ip();
         if (!check_rate_limit($identifier, 5, 900)) {
             $error = 'Too many login attempts. Please try again later.';
         } else {
-            // Get user
             $stmt = $conn->prepare("SELECT * FROM accounts WHERE username = ?");
             $stmt->bind_param("s", $username);
             $stmt->execute();
@@ -35,120 +33,154 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (!verify_password($password, $user['password'])) {
                 $error = 'Username or password incorrect';
             } else {
-                // Update last login
-                $stmt = $conn->prepare("UPDATE accounts SET last_login = NOW() WHERE id = ?");
-                $stmt->bind_param("i", $user['id']);
-                $stmt->execute();
+                // Check 2FA if enabled
+                if ($user['twofactor_enabled']) {
+                    $twofactor_code = sanitize($_POST['licenseauthtwofactor'] ?? '');
+                    if (empty($twofactor_code)) {
+                        $error = '2FA code is required';
+                    } else {
+                        // Verify 2FA using the stored secret
+                        $secret = $user['twofactor_secret'];
+                        if (!empty($secret)) {
+                            require_once '../includes/2fa.php';
+                            $tfa = new PHPGangsta_GoogleAuthenticator();
+                            if (!$tfa->verifyCode($secret, $twofactor_code, 2)) {
+                                $error = 'Invalid 2FA code';
+                            }
+                        } else {
+                            $error = '2FA not configured properly';
+                        }
+                    }
+                }
                 
-                // Set session
-                $_SESSION['username'] = $username;
-                $_SESSION['ownerid'] = $user['ownerid'];
-                $_SESSION['user_id'] = $user['id'];
-                
-                // Log action
-                log_action($user['ownerid'], 'login', $username, 'User logged in');
-                
-                header("Location: " . SITE_URL . "/app/");
-                exit();
+                if (empty($error)) {
+                    $ip = get_ip();
+                    $stmt = $conn->prepare("UPDATE accounts SET last_login = NOW(), ip = ? WHERE id = ?");
+                    $stmt->bind_param("si", $ip, $user['id']);
+                    $stmt->execute();
+                    
+                    $_SESSION['username'] = $username;
+                    $_SESSION['ownerid'] = $user['ownerid'];
+                    $_SESSION['user_id'] = $user['id'];
+                    
+                    log_action($user['ownerid'], 'login', $username, 'User logged in', $ip);
+                    
+                    header("Location: " . SITE_URL . "/app/");
+                    exit();
+                }
             }
         }
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="en" class="bg-[#09090d] text-white overflow-x-hidden">
+<!doctype html>
+<html lang="en" data-bs-theme="dark" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8" />
+    <title>Sign In - <?= SITE_NAME ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <?= SITE_NAME ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta content="LicenseAuth - Secure Authentication System" name="description" />
+    <meta content="LicenseAuth" name="author" />
+    <link rel="shortcut icon" href="<?= SITE_URL ?>/assets/images/favicon.ico">
+    <script src="<?= SITE_URL ?>/assets/js/layout.js"></script>
+    <link href="<?= SITE_URL ?>/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/app.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
+    <script>
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
 </head>
-<body class="bg-gradient-to-br from-[#09090d] to-[#1a1a2e]">
-    <div class="min-h-screen flex items-center justify-center py-12 px-4">
-        <div class="w-full max-w-md">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 class="text-4xl font-bold mb-2"><?= SITE_NAME ?></h1>
-                <p class="text-gray-400">Sign in to your account</p>
-            </div>
-
-            <!-- Card -->
-            <div class="bg-[#0f0f17] border border-gray-700 rounded-lg p-8 shadow-2xl">
-                <!-- Error Alert -->
-                <?php if ($error): ?>
-                <div class="mb-6 p-4 bg-red-500/20 border border-red-500 rounded text-red-300">
-                    <i class="fas fa-exclamation-circle mr-2"></i> <?= $error ?>
-                </div>
-                <?php endif; ?>
-
-                <!-- Login Form -->
-                <form method="POST" class="space-y-6">
-                    <!-- Username -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Username</label>
-                        <input 
-                            type="text" 
-                            name="username" 
-                            placeholder="Enter your username"
-                            class="w-full px-4 py-2 bg-[#1a1a2e] border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            required
-                        >
-                    </div>
-
-                    <!-- Password -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Password</label>
-                        <input 
-                            type="password" 
-                            name="password" 
-                            placeholder="••••••••"
-                            class="w-full px-4 py-2 bg-[#1a1a2e] border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            required
-                        >
-                    </div>
-
-                    <!-- Remember Me -->
-                    <div class="flex items-center justify-between">
-                        <label class="flex items-center">
-                            <input type="checkbox" class="rounded bg-[#1a1a2e] border-gray-600" name="remember">
-                            <span class="ml-2 text-sm">Remember me</span>
-                        </label>
-                        <a href="#" class="text-sm text-blue-500 hover:underline">Forgot password?</a>
-                    </div>
-
-                    <!-- Submit -->
-                    <button 
-                        type="submit" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
-                    >
-                        Sign In
-                    </button>
-                </form>
-
-                <!-- Divider -->
-                <div class="mt-6 relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-600"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-[#0f0f17] text-gray-400">Don't have an account?</span>
+<body>
+    <div class="auth-page-wrapper pt-5">
+        <div class="auth-page-content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center mt-sm-5 mb-4 text-white-50">
+                            <div>
+                                <a href="../" class="d-inline-block auth-logo">
+                                    <img src="<?= SITE_URL ?>/assets/images/logo-light.png" alt="" height="35">
+                                </a>
+                            </div>
+                            <p class="mt-3 fs-15 fw-medium">Authentication System</p>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Register Link -->
-                <div class="mt-6">
-                    <a href="<?= SITE_URL ?>/register/" class="w-full block text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition duration-200 font-medium">
-                        Create Account
-                    </a>
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6 col-xl-5">
+                        <div class="card mt-4 card-bg-fill">
+                            <div class="card-body p-4">
+                                <div class="text-center mt-2">
+                                    <h5 class="text-primary">Welcome Back !</h5>
+                                    <p class="text-muted">Sign in to continue to <?= SITE_NAME ?>.</p>
+                                </div>
+                                <?php if ($error): ?>
+                                <div class="alert alert-danger alert-border-left alert-dismissible fade show" role="alert">
+                                    <i class="ri-error-warning-line me-1 align-middle"></i> <?= $error ?>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php endif; ?>
+                                <div class="p-2 mt-4">
+                                    <form method="post">
+                                        <div class="mb-3">
+                                            <label for="username" class="form-label">Username</label>
+                                            <input type="text" class="form-control" required name="username" placeholder="Enter username" autocomplete="on" />
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="float-end">
+                                                <a href="../forgot/" class="text-muted">Forgot password?</a>
+                                            </div>
+                                            <label class="form-label" for="password-input">Password</label>
+                                            <div class="position-relative auth-pass-inputgroup mb-3">
+                                                <input type="password" class="form-control pe-5 password-input" placeholder="Enter password" required name="password" autocomplete="on" />
+                                                <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon material-shadow-none" type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="username" class="form-label">2FA Authenticator</label>
+                                            <input type="text" class="form-control" name="licenseauthtwofactor" placeholder="Enter 2FA If You Enable">
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="" id="auth-remember-check">
+                                            <label class="form-check-label" for="auth-remember-check">Remember me</label>
+                                        </div>
+                                        <div class="mt-4">
+                                            <button class="btn btn-success w-100" name="login">Sign In</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <p class="mb-0">Don't have an account ? <a href="<?= SITE_URL ?>/register/" class="fw-semibold text-primary text-decoration-underline"> Signup </a></p>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Footer -->
-            <p class="text-center text-gray-500 text-sm mt-8">
-                Protected by © 2024 <?= SITE_NAME ?>. All rights reserved.
-            </p>
         </div>
+        <footer class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center">
+                            <p class="mb-0 text-muted">&copy; 2021 - <?= date('Y') ?> <?= SITE_NAME ?>. Made with <i class="mdi mdi-heart text-danger"></i> by FENIX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
+    <script src="<?= SITE_URL ?>/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/node-waves/waves.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/feather-icons/feather.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/plugins/lord-icon-2.1.0.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/plugins.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/particles.js/particles.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/particles.app.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/password-addon.init.js"></script>
 </body>
 </html>

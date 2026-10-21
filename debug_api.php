@@ -8,10 +8,10 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Configuration - UPDATE THESE VALUES
-$api_url = 'http://localhost/licenceauth/api/1.2/';
-$ownerid = 'Z0UZV8TD43';  // From your database
-$app_name = 'SharmaBypass';  // From your database
-$app_secret = '05587a8330b4c27d15ad81826299e566e2965b59d10aa396818a1dc70b39b217';  // From your database
+$api_url = '<?= SITE_URL ?>/api/1.2/';
+$ownerid = 'J33AZRRD5M';  // From your database
+$app_name = 'DemoApp';  // From your database
+$app_secret = 'af40cef071c0030880bbac99969cfa5b80b93d6d0b7230a3df4456ef678a00b5';  // From your database
 
 echo "=== KeyAuth API Connectivity Test ===\n\n";
 
@@ -29,7 +29,7 @@ $curl_error = curl_error($ch);
 curl_close($ch);
 
 if ($curl_error) {
-    echo "✗ CURL Error: $curl_error\n";
+    echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ CURL Error: $curl_error\n";
     echo "Please check:\n";
     echo "  1. XAMPP Apache is running\n";
     echo "  2. URL is correct: $api_url\n";
@@ -37,7 +37,7 @@ if ($curl_error) {
     exit(1);
 }
 
-echo "✓ API endpoint accessible (HTTP $http_code)\n\n";
+echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ API endpoint accessible (HTTP $http_code)\n\n";
 
 // Test 2: Init request with full debugging
 echo "Test 2: Testing INIT endpoint...\n";
@@ -73,7 +73,7 @@ $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 
 if ($curl_errno) {
-    echo "✗ CURL Error ($curl_errno): $curl_error\n";
+    echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ CURL Error ($curl_errno): $curl_error\n";
     rewind($verbose);
     $verbose_log = stream_get_contents($verbose);
     echo "Verbose output:\n$verbose_log\n";
@@ -100,7 +100,7 @@ echo str_repeat('-', 50) . "\n\n";
 // Parse response
 $json = json_decode($body, true);
 if (json_last_error() !== JSON_ERROR_NONE) {
-    echo "✗ Invalid JSON response: " . json_last_error_msg() . "\n";
+    echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ Invalid JSON response: " . json_last_error_msg() . "\n";
     echo "Raw body: $body\n";
     exit(1);
 }
@@ -113,17 +113,17 @@ if (preg_match('/signature:\s*([a-f0-9]+)/i', $header, $matches)) {
 }
 
 if (!isset($json['success'])) {
-    echo "✗ Response missing 'success' field\n";
+    echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ Response missing 'success' field\n";
     print_r($json);
     exit(1);
 }
 
 if (!$json['success']) {
-    echo "✗ API returned error: " . ($json['message'] ?? 'Unknown error') . "\n";
+    echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ API returned error: " . ($json['message'] ?? 'Unknown error') . "\n";
     exit(1);
 }
 
-echo "✓ INIT successful!\n";
+echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ INIT successful!\n";
 echo "Session ID: " . ($json['data']['sessionid'] ?? 'N/A') . "\n";
 echo "Nonce: " . ($json['data']['nonce'] ?? 'N/A') . "\n";
 
@@ -133,15 +133,15 @@ if ($signature) {
     $expected_sig = hash_hmac('sha256', $body, $app_secret);
     
     if ($signature === $expected_sig) {
-        echo "✓ Signature valid!\n";
+        echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Signature valid!\n";
     } else {
-        echo "✗ Signature mismatch!\n";
+        echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ Signature mismatch!\n";
         echo "Received:  $signature\n";
         echo "Expected:  $expected_sig\n";
         echo "Note: This is expected - init signs with app_secret, subsequent requests use combined enckey\n";
     }
 } else {
-    echo "⚠ No signature in response headers\n";
+    echo "ÃƒÂ¢Ã…Â¡Ã‚Â  No signature in response headers\n";
 }
 
 // Test 4: Check session
@@ -173,9 +173,9 @@ if (isset($json['data']['sessionid'])) {
     $check_json = json_decode($body, true);
     
     if ($check_json && $check_json['success']) {
-        echo "✓ Session check successful!\n";
+        echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Session check successful!\n";
     } else {
-        echo "✗ Session check failed: " . ($check_json['message'] ?? 'Unknown error') . "\n";
+        echo "ÃƒÂ¢Ã…â€œÃ¢â‚¬â€ Session check failed: " . ($check_json['message'] ?? 'Unknown error') . "\n";
     }
 }
 

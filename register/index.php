@@ -13,9 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = sanitize($_POST['username'] ?? '');
     $email = sanitize($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $confirm = $_POST['confirm'] ?? '';
+    $confirm = $_POST['password_confirmation'] ?? '';
+    $agree = isset($_POST['agree']);
     
-    // Validation
     if (empty($username)) {
         $error = 'Username is required';
     } elseif (strlen($username) < 3) {
@@ -30,10 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters';
     } elseif ($password !== $confirm) {
         $error = 'Passwords do not match';
+    } elseif (!$agree) {
+        $error = 'You must agree to the Terms of Service';
     }
     
     if (empty($error)) {
-        // Check if username exists
         $stmt = $conn->prepare("SELECT id FROM accounts WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -41,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Username already exists';
         }
         
-        // Check if email exists
         $stmt = $conn->prepare("SELECT id FROM accounts WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
@@ -53,13 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($error)) {
         $ownerid = generate_owner_id();
         $password_hash = hash_password($password);
-        $role = 'owner';
+        $role = 'tester';
         
         $stmt = $conn->prepare("INSERT INTO accounts (username, email, password, ownerid, role) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("sssss", $username, $email, $password_hash, $ownerid, $role);
         
         if ($stmt->execute()) {
+            $success = 'Account created successfully!';
             $_SESSION['username'] = $username;
+            $_SESSION['ownerid'] = $ownerid;
+            $_SESSION['user_id'] = $stmt->insert_id;
             header("Location: " . SITE_URL . "/app/");
             exit();
         } else {
@@ -68,117 +71,131 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="en" class="bg-[#09090d] text-white overflow-x-hidden">
+<!doctype html>
+<html lang="en" data-bs-theme="dark" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8" />
+    <title>Sign Up - <?= SITE_NAME ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - <?= SITE_NAME ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta content="LicenseAuth - Secure Authentication System" name="description" />
+    <meta content="LicenseAuth" name="author" />
+    <link rel="shortcut icon" href="<?= SITE_URL ?>/assets/images/favicon.ico">
+    <script src="<?= SITE_URL ?>/assets/js/layout.js"></script>
+    <link href="<?= SITE_URL ?>/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/app.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
+    <script>
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
 </head>
-<body class="bg-gradient-to-br from-[#09090d] to-[#1a1a2e]">
-    <div class="min-h-screen flex items-center justify-center py-12 px-4">
-        <div class="w-full max-w-md">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 class="text-4xl font-bold mb-2"><?= SITE_NAME ?></h1>
-                <p class="text-gray-400">Create your account</p>
-            </div>
-
-            <!-- Card -->
-            <div class="bg-[#0f0f17] border border-gray-700 rounded-lg p-8 shadow-2xl">
-                <!-- Error Alert -->
-                <?php if ($error): ?>
-                <div class="mb-6 p-4 bg-red-500/20 border border-red-500 rounded text-red-300">
-                    <i class="fas fa-exclamation-circle mr-2"></i> <?= $error ?>
-                </div>
-                <?php endif; ?>
-
-                <!-- Register Form -->
-                <form method="POST" class="space-y-6">
-                    <!-- Username -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Username</label>
-                        <input 
-                            type="text" 
-                            name="username" 
-                            placeholder="Enter username"
-                            class="w-full px-4 py-2 bg-[#1a1a2e] border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            required
-                        >
-                        <p class="text-xs text-gray-400 mt-1">3-70 characters, letters and numbers only</p>
-                    </div>
-
-                    <!-- Email -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Email Address</label>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            placeholder="your@email.com"
-                            class="w-full px-4 py-2 bg-[#1a1a2e] border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            required
-                        >
-                    </div>
-
-                    <!-- Password -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Password</label>
-                        <input 
-                            type="password" 
-                            name="password" 
-                            placeholder="••••••••"
-                            class="w-full px-4 py-2 bg-[#1a1a2e] border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            required
-                        >
-                        <p class="text-xs text-gray-400 mt-1">Minimum <?= PASSWORD_MIN_LENGTH ?> characters</p>
-                    </div>
-
-                    <!-- Confirm Password -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Confirm Password</label>
-                        <input 
-                            type="password" 
-                            name="confirm" 
-                            placeholder="••••••••"
-                            class="w-full px-4 py-2 bg-[#1a1a2e] border border-gray-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            required
-                        >
-                    </div>
-
-                    <!-- Submit -->
-                    <button 
-                        type="submit" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
-                    >
-                        Create Account
-                    </button>
-                </form>
-
-                <!-- Divider -->
-                <div class="mt-6 relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-600"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-[#0f0f17] text-gray-400">Already have an account?</span>
+<body>
+    <div class="auth-page-wrapper pt-5">
+        <div class="auth-page-content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center mt-sm-5 mb-4 text-white-50">
+                            <div>
+                                <a href="../" class="d-inline-block auth-logo">
+                                    <img src="<?= SITE_URL ?>/assets/images/logo-light.png" alt="" height="35">
+                                </a>
+                            </div>
+                            <p class="mt-3 fs-15 fw-medium">Authentication System</p>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Login Link -->
-                <div class="mt-6">
-                    <a href="<?= SITE_URL ?>/login/" class="w-full block text-center px-4 py-2 border border-gray-600 rounded hover:bg-[#1a1a2e] transition duration-200">
-                        Sign In
-                    </a>
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6 col-xl-5">
+                        <div class="card mt-4 card-bg-fill">
+                            <div class="card-body p-4">
+                                <div class="text-center mt-2">
+                                    <h5 class="text-primary">Create New Account</h5>
+                                    <p class="text-muted">Get your free <?= SITE_NAME ?> Premium account now.</p>
+                                </div>
+                                <?php if ($error): ?>
+                                <div class="alert alert-danger alert-border-left alert-dismissible fade show" role="alert">
+                                    <i class="ri-error-warning-line me-1 align-middle"></i> <?= $error ?>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php endif; ?>
+                                <?php if ($success): ?>
+                                <div class="alert alert-success alert-border-left alert-dismissible fade show" role="alert">
+                                    <i class="ri-check-line me-1 align-middle"></i> <?= $success ?>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php endif; ?>
+                                <div class="p-2 mt-4">
+                                    <form method="post">
+                                        <div class="mb-3">
+                                            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control" required name="email" placeholder="Please enter email" autocomplete="on">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="username" class="form-label">Username<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" required name="username" placeholder="Enter username" autocomplete="on">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="password-input">Password<span class="text-danger">*</span></label>
+                                            <div class="position-relative auth-pass-inputgroup mb-3">
+                                                <input type="password" class="form-control pe-5 password-input" placeholder="Enter password" required name="password" autocomplete="on">
+                                                <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon material-shadow-none" type="button" id="password-addon"><i class="ri-eye-fill align-middle"></i></button>
+                                            </div>
+                                            <p class="text-muted">Use 12 or more characters with a mix of letters, numbers &amp; symbols.</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="password-confirm">Confirm Password</label>
+                                            <input type="password" class="form-control" placeholder="Confirm password" required name="password_confirmation">
+                                        </div>
+                                        <div class="alert alert-warning border-0" role="alert">
+                                            <strong>Do NOT share your account with anyone.</strong> This is against ToS.<br>
+                                            With developer plan or higher, you can create accounts for other people to use.
+                                        </div>
+                                        <div class="alert alert-danger border-0" role="alert">
+                                            <strong>Do NOT use a fake email.</strong> You need a real email for account recovery/password reset.
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" value="1" id="agree" name="agree" required>
+                                            <label class="form-check-label" for="agree">
+                                                I agree to the <a href="https://licenseauth.cloud/terms" class="text-primary">Terms of Service</a>
+                                            </label>
+                                        </div>
+                                        <div class="mt-4">
+                                            <button class="btn btn-success w-100" type="submit">Sign Up</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <p class="mb-0">Already have an account ? <a href="<?= SITE_URL ?>/login/" class="fw-semibold text-primary text-decoration-underline"> Signin </a></p>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Footer -->
-            <p class="text-center text-gray-500 text-sm mt-8">
-                By registering, you agree to our <a href="#" class="text-blue-500 hover:underline">Terms of Service</a>
-            </p>
         </div>
+        <footer class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center">
+                            <p class="mb-0 text-muted">&copy; 2021 - <?= date('Y') ?> <?= SITE_NAME ?>. Made with <i class="mdi mdi-heart text-danger"></i> by FENIX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
+    <script src="<?= SITE_URL ?>/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/node-waves/waves.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/feather-icons/feather.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/plugins/lord-icon-2.1.0.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/plugins.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/particles.js/particles.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/particles.app.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/password-addon.init.js"></script>
 </body>
 </html>

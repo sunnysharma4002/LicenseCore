@@ -157,9 +157,14 @@ function resolve_enckey($sessionid, $app_secret) {
 
 // Enforce session presence for actions that must be signed
 function require_session_with_enckey($sessionid, $app_secret) {
+    if (empty($sessionid)) {
+        error_log('require_session_with_enckey: EMPTY sessionid provided');
+        send_response(false, "Session required - no session ID provided");
+    }
     $session = get_session($sessionid, $app_secret);
     if (!$session) {
-        send_response(false, "Signature check failed");
+        error_log('require_session_with_enckey: Session not found - sessionid=' . $sessionid . ' app=' . substr($app_secret,0,8));
+        send_response(false, "Session expired or not found");
     }
     return $session;
 }
@@ -178,7 +183,7 @@ function get_app_details($ownerid, $name) {
 
 // Check if app is paused
 if ($app['paused']) {
-    send_response(false, "This application is currently paused");
+    send_response(false, "This application is currently paused", null, $response_enckey);
 }
 
 // ===== CORE FUNCTIONS =====
@@ -212,7 +217,7 @@ function register_user($app_secret, $username, $key, $password, $hwid = null, $e
     }
     
     // Check if username exists
-    $stmt = $conn->prepare("SELECT id FROM end_users WHERE app = ? AND username = ?");
+    $stmt = $conn->prepare("SELECT id FROM users WHERE app = ? AND username = ?");
     $stmt->bind_param("ss", $app_secret, $username);
     $stmt->execute();
     if ($stmt->get_result()->num_rows > 0) {
@@ -250,7 +255,7 @@ function register_user($app_secret, $username, $key, $password, $hwid = null, $e
     $ip = get_ip();
     
     // Create user
-    $stmt = $conn->prepare("INSERT INTO end_users (app, username, email, password, hwid, ip) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO users (app, username, email, password, hwid, ip) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssss", $app_secret, $username, $email, $password_hash, $hwid, $ip);
     
     if ($stmt->execute()) {
@@ -258,6 +263,15 @@ function register_user($app_secret, $username, $key, $password, $hwid = null, $e
         $stmt = $conn->prepare("UPDATE keys SET status = 'inactive', used_by = ?, used_at = NOW() WHERE id = ?");
         $stmt->bind_param("si", $username, $key_data['id']);
         $stmt->execute();
+        
+        // Create subscription from key expiry
+        $sub_name = 'default';
+        $sub_expiry = intval($key_data['expiry'] ?? 0);
+        if ($sub_expiry > 0) {
+            $stmt = $conn->prepare("INSERT INTO subs (app, user, sub_name, expiry) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("sssi", $app_secret, $username, $sub_name, $sub_expiry);
+            $stmt->execute();
+        }
         
         // Log action
         log_action($app_secret, 'register', $username, 'User registered', $ip);
@@ -275,7 +289,7 @@ function login_user($app_secret, $username, $password, $hwid = null) {
     $username = sanitize($username);
     
     // Get user
-    $stmt = $conn->prepare("SELECT * FROM end_users WHERE app = ? AND username = ?");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE app = ? AND username = ?");
     $stmt->bind_param("ss", $app_secret, $username);
     $stmt->execute();
     $user_result = $stmt->get_result();
@@ -287,9 +301,15 @@ function login_user($app_secret, $username, $password, $hwid = null) {
     $user = $user_result->fetch_assoc();
     
     // Check if banned
-    if ($user['banned']) {
+    if (intval($user['banned'] ?? 0) === 1) {
         $reason = $user['ban_reason'] ?? 'Banned';
         return ['success' => false, 'message' => 'User banned: ' . $reason];
+    }
+    
+    // Check if paused
+    if (intval($user['paused'] ?? 0) === 1) {
+        log_action($app_secret, 'login_paused', $username, 'Paused user attempted login', get_ip());
+        return ['success' => false, 'message' => 'User is paused'];
     }
     
     // Verify password
@@ -305,9 +325,14 @@ function login_user($app_secret, $username, $password, $hwid = null) {
     }
     
     // Update last login
-    $stmt = $conn->prepare("UPDATE end_users SET last_login = NOW(), ip = ? WHERE id = ?");
     $ip = get_ip();
+    $stmt = $conn->prepare("UPDATE users SET last_login = NOW(), ip = ? WHERE id = ?");
     $stmt->bind_param("si", $ip, $user['id']);
+    $stmt->execute();
+    
+    // Update key used_at to reflect latest login
+    $stmt = $conn->prepare("UPDATE `keys` SET used_at = NOW() WHERE app = ? AND used_by = ?");
+    $stmt->bind_param("ss", $app_secret, $username);
     $stmt->execute();
     
     // Log action
@@ -336,9 +361,9 @@ function login_user($app_secret, $username, $password, $hwid = null) {
             'username' => $user['username'],
             'email' => $user['email'],
             'hwid' => $user['hwid'],
-            'ip' => $user['ip'],
+            'ip' => $ip,
             'created_at' => strtotime($user['created_at']),
-            'last_login' => $user['last_login'] ? strtotime($user['last_login']) : null,
+            'last_login' => time(),
             'subscriptions' => $subscriptions
         ]
     ];
@@ -356,10 +381,8 @@ switch ($type_param) {
         
         // App details already fetched earlier, no need to fetch again
         
-        // Version check is optional - only validate if both client and server versions exist
-        if (!empty($ver_param) && !empty($app['version']) && $ver_param != $app['version']) {
-            send_response(false, "Invalid version", null, $app_secret);
-        }
+        // Version check - if mismatch, include update info but don't block
+        $version_mismatch = !empty($ver_param) && !empty($app['version']) && $ver_param != $app['version'];
         
         // Combine client enckey with secret (KeyAuth style)
         $enckey = !empty($client_enckey) ? $client_enckey . "-" . $app_secret : NULL;
@@ -376,7 +399,7 @@ switch ($type_param) {
         
         // Calculate stats
         $stmt = $conn->prepare("SELECT 
-            (SELECT COUNT(*) FROM end_users WHERE app = ?) as numUsers,
+            (SELECT COUNT(*) FROM users WHERE app = ?) as numUsers,
             (SELECT COUNT(*) FROM `sessions` WHERE app = ? AND validated = 1 AND expiry > ?) as numOnlineUsers,
             (SELECT COUNT(*) FROM `keys` WHERE app = ? AND status = 'active') as numKeys
         ");
@@ -388,21 +411,48 @@ switch ($type_param) {
         // CRITICAL: Init response is signed with just $app_secret (not combined enckey)
         // This matches KeyAuth behavior - client verifies init with app secret only
         // Also flatten fields to top-level to match C# library expectations
-        send_response(true, "Initialized", [
+        
+        // Build appinfo
+        $appinfo = [
+            "numUsers" => (string)($stats['numUsers'] ?? '0'),
+            "numOnlineUsers" => (string)($stats['numOnlineUsers'] ?? '0'),
+            "numKeys" => (string)($stats['numKeys'] ?? '0'),
+            "version" => $app['version'] ?? '1.0',
+            "customerPanelLink" => $app['custom_domain'] ?? ''
+        ];
+        
+        // Get download URL from settings
+        $app_settings = !empty($app['settings']) ? json_decode($app['settings'], true) : [];
+        $download_url = $app_settings['download'] ?? '';
+        $web_download_url = $app_settings['webdownload'] ?? '';
+        if (!empty($download_url)) {
+            $appinfo['dload'] = $download_url;
+        }
+        if (!empty($web_download_url)) {
+            $appinfo['web_download'] = $web_download_url;
+        }
+        
+        $response_data = [
             "sessionid" => $sessionid,
-            "appinfo" => [
-                "numUsers" => (string)($stats['numUsers'] ?? '0'),
-                "numOnlineUsers" => (string)($stats['numOnlineUsers'] ?? '0'),
-                "numKeys" => (string)($stats['numKeys'] ?? '0'),
-                "version" => $app['version'] ?? '1.0',
-                "customerPanelLink" => $app['custom_domain'] ?? ''
-            ],
+            "enckey" => $enckey,
+            "appinfo" => $appinfo,
             "nonce" => bin2hex(random_bytes(16))
-        ], $app_secret, true, 'data');  // Sign with secret only, not combined enckey; flatten
+        ];
+        
+        // If version mismatch, add update info without blocking
+        if ($version_mismatch) {
+            $response_data['appinfo']['newVersion'] = $app['version'];
+            if (!empty($download_url)) {
+                $response_data['appinfo']['dload'] = $download_url;
+            }
+        }
+        
+        send_response(true, "Initialized", $response_data, $app_secret, true, 'data');  // Sign with secret only, not combined enckey; flatten
         break;
     
     case 'register':
         $session = require_session_with_enckey($sessionid_param, $app_secret);
+        $session_enckey = $session['enckey'] ?? null;
         $username = sanitize($input_data['username'] ?? $_GET['username'] ?? '');
         $password = $input_data['pass'] ?? $_GET['pass'] ?? '';
         $key = sanitize($input_data['key'] ?? $_GET['key'] ?? '');
@@ -410,21 +460,40 @@ switch ($type_param) {
         $email = sanitize($input_data['email'] ?? $_GET['email'] ?? null);
         
         $result = register_user($app_secret, $username, $key, $password, $hwid, $email);
-        $response_data = $result['success'] ? ['nonce' => bin2hex(random_bytes(16))] : null;
-        send_response($result['success'], $result['message'], $response_data, $app_secret, false, 'info');
+        if ($result['success']) {
+            $new_expiry = time() + 3600;
+            $stmt = $conn->prepare("UPDATE sessions SET validated = 1, credential = ?, expiry = ? WHERE id = ? AND app = ?");
+            $stmt->bind_param("siss", $username, $new_expiry, $sessionid_param, $app_secret);
+            $stmt->execute();
+            $response_data = ['nonce' => bin2hex(random_bytes(16))];
+        } else {
+            $response_data = null;
+        }
+        send_response($result['success'], $result['message'], $response_data, $session_enckey, true, 'info');
         break;
     
     case 'login':
         $session = require_session_with_enckey($sessionid_param, $app_secret);
+        $session_enckey = $session['enckey'] ?? null;
         $username = sanitize($input_data['username'] ?? $_GET['username'] ?? '');
         $password = $input_data['pass'] ?? $_GET['pass'] ?? '';
         $hwid = sanitize($input_data['hwid'] ?? $_GET['hwid'] ?? null);
         
         $result = login_user($app_secret, $username, $password, $hwid);
-        if ($result['success'] && isset($result['info'])) {
-            $result['info']['nonce'] = bin2hex(random_bytes(16));
+        if ($result['success']) {
+            // Extend session expiry on successful login
+            $new_expiry = time() + 3600;
+            $stmt = $conn->prepare("UPDATE sessions SET validated = 1, credential = ?, expiry = ? WHERE id = ? AND app = ?");
+            $stmt->bind_param("siss", $username, $new_expiry, $sessionid_param, $app_secret);
+            $stmt->execute();
+            $response_data = [
+                'info' => $result['info'] ?? [],
+                'nonce' => bin2hex(random_bytes(16))
+            ];
+        } else {
+            $response_data = null;
         }
-        send_response($result['success'], $result['message'], $result['success'] ? $result['info'] : null, $app_secret, false, 'info');
+        send_response($result['success'], $result['message'], $response_data, $session_enckey, true, 'info');
         break;
     
     case 'license':
@@ -435,7 +504,7 @@ switch ($type_param) {
             $hwid = sanitize($input_data['hwid'] ?? $_GET['hwid'] ?? null);
 
         if (empty($key)) {
-            send_response(false, "License key required");
+            send_response(false, "License key required", null, $response_enckey);
         }
         
         // Get license key from database
@@ -457,7 +526,7 @@ switch ($type_param) {
             error_log('License lookup failed. app=' . substr($app_secret,0,8) . ' key=' . $key . ' available_keys=' . json_encode($available));
 
             log_action($app_secret, 'license_invalid', $key, "Invalid license key attempt", get_ip());
-            send_response(false, "Invalid license key");
+            send_response(false, "Invalid license key", null, $response_enckey);
         }
         
         $license = $key_result->fetch_assoc();
@@ -465,28 +534,91 @@ switch ($type_param) {
         // Check if key is expired
         if ($license['expiry'] > 0 && $license['expiry'] < time()) {
             log_action($app_secret, 'license_expired', $key, "Expired license key attempt", get_ip());
-            send_response(false, "License key has expired");
-        }
-
-        // Check if key is already used
-        if ($license['status'] !== 'active') {
-            log_action($app_secret, 'license_used', $key, "Already used license key attempt", get_ip());
-            send_response(false, "License key has already been used or is inactive");
+            send_response(false, "License key has expired", null, $response_enckey);
         }
 
         // Check blacklist
         if (is_blacklisted($app_secret, 'hwid', $hwid) || is_blacklisted($app_secret, 'key', $key)) {
             log_action($app_secret, 'license_blacklist', $key, "Blacklisted HWID/key attempt", get_ip());
-            send_response(false, "This license or hardware is blacklisted");
+            send_response(false, "This license or hardware is blacklisted", null, $response_enckey);
         }
+        
+        // Create or update user in users table for dashboard visibility
+        $license_username = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
+        $ip = get_ip();
+        $now_time = time();
+        
+        $stmt = $conn->prepare("SELECT * FROM users WHERE app = ? AND username = ?");
+        $stmt->bind_param("ss", $app_secret, $license_username);
+        $stmt->execute();
+        $existing_user = $stmt->get_result()->fetch_assoc();
+        
+        if ($existing_user) {
+            // Check if banned
+            if (intval($existing_user['banned'] ?? 0) === 1) {
+                log_action($app_secret, 'license_banned', $key, 'Banned user attempted license', get_ip());
+                send_response(false, 'User banned: ' . ($existing_user['ban_reason'] ?? 'Banned'), null, $response_enckey);
+            }
+            // Check if paused
+            if (intval($existing_user['paused'] ?? 0) === 1) {
+                log_action($app_secret, 'license_paused', $key, 'Paused user attempted license', get_ip());
+                send_response(false, 'User is paused', null, $response_enckey);
+            }
+            // Check HWID binding (if key was already bound to a different HWID)
+            $stored_hwid = $existing_user['hwid'] ?? '';
+            if (!empty($stored_hwid) && !empty($hwid) && $stored_hwid !== $hwid) {
+                log_action($app_secret, 'license_hwid_mismatch', $key, "HWID mismatch: stored=$stored_hwid vs incoming=$hwid", get_ip());
+                send_response(false, 'This license is already bound to another PC', null, $response_enckey);
+            }
+            // Update existing user
+            $stmt = $conn->prepare("UPDATE users SET hwid = ?, ip = ?, last_login = NOW() WHERE id = ?");
+            $stmt->bind_param("ssi", $hwid, $ip, $existing_user['id']);
+            $stmt->execute();
+        } else {
+            // Create new user record
+            $stmt = $conn->prepare("INSERT INTO users (app, username, hwid, ip, created_at, last_login) VALUES (?, ?, ?, ?, NOW(), NOW())");
+            $stmt->bind_param("ssss", $app_secret, $license_username, $hwid, $ip);
+            $stmt->execute();
+        }
+        
+        // Create or update subscription from key expiry
+        $sub_expiry = intval($license['expiry'] ?? 0);
+        $sub_name = 'default';
+        $stmt = $conn->prepare("SELECT id FROM subs WHERE app = ? AND user = ? AND sub_name = ?");
+        $stmt->bind_param("sss", $app_secret, $license_username, $sub_name);
+        $stmt->execute();
+        if ($stmt->get_result()->fetch_assoc()) {
+            if ($sub_expiry > 0) {
+                $stmt = $conn->prepare("UPDATE subs SET expiry = ? WHERE app = ? AND user = ? AND sub_name = ?");
+                $stmt->bind_param("isss", $sub_expiry, $app_secret, $license_username, $sub_name);
+                $stmt->execute();
+            }
+        } else {
+            if ($sub_expiry > 0) {
+                $stmt = $conn->prepare("INSERT INTO subs (app, user, sub_name, expiry) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("sssi", $app_secret, $license_username, $sub_name, $sub_expiry);
+                $stmt->execute();
+            }
+        }
+
+        // Mark key as used (status stays inactive, but license() still accepts it)
+        $stmt = $conn->prepare("UPDATE `keys` SET used_by = 'license_api', used_at = NOW(), status = 'inactive' WHERE id = ?");
+        $stmt->bind_param("i", $license['id']);
+        $stmt->execute();
+
+        // Bind key to session
+        $stmt = $conn->prepare("UPDATE sessions SET validated = 1, credential = ?, expiry = ? WHERE id = ? AND app = ?");
+        $new_expiry = $now_time + 3600;
+        $stmt->bind_param("siss", $key, $new_expiry, $sessionid_param, $app_secret);
+        $stmt->execute();
         
         // Return license info - align with C# user_data_structure field names
         $user_data = [
-            'username'   => 'license_' . bin2hex(random_bytes(4)),
-            'ip'         => get_ip(),
+            'username'   => $license_username,
+            'ip'         => $ip,
             'hwid'       => $hwid ?? '',
-            'createdate' => (string)time(),
-            'lastlogin'  => (string)time(),
+            'createdate' => (string)$now_time,
+            'lastlogin'  => (string)$now_time,
             'subscriptions' => [
                 [
                     'subscription' => 'Premium',
@@ -497,11 +629,11 @@ switch ($type_param) {
         ];
 
         error_log('License response: ' . json_encode($user_data));
-        log_action($app_secret, 'license_valid', $key, "Valid license used", get_ip());
-        send_response(true, "License is valid", $user_data, $app_secret, false, 'info');  // Place under 'info' for C# client
+        log_action($app_secret, 'license_valid', $key, "Valid license used", $ip);
+        send_response(true, "License is valid", $user_data, $response_enckey, false, 'info');  // Place under 'info' for C# client
         } catch (Exception $e) {
             error_log('License endpoint error: ' . $e->getMessage());
-            send_response(false, "License validation failed: " . $e->getMessage());
+            send_response(false, "License validation failed: " . $e->getMessage(), null, $response_enckey);
         }
         break;
     
@@ -516,7 +648,7 @@ switch ($type_param) {
         send_response(true, "Session valid", [
             'sessionid' => $session['id'],
             'nonce' => bin2hex(random_bytes(16))
-        ], $app_secret);
+        ], $session['enckey']);
         break;
     
     case 'validate':
@@ -529,13 +661,13 @@ switch ($type_param) {
         send_response(true, "Session valid", [
             'sessionid' => $session['id'],
             'nonce' => bin2hex(random_bytes(16))
-        ], $app_secret);
+        ], $session['enckey']);
         break;
     
     case 'fetchstats':
         $session = require_session_with_enckey($sessionid_param, $app_secret);
         $stmt = $conn->prepare("SELECT
-            (SELECT COUNT(*) FROM end_users WHERE app = ?) as numUsers,
+            (SELECT COUNT(*) FROM users WHERE app = ?) as numUsers,
             (SELECT COUNT(*) FROM `sessions` WHERE app = ? AND validated = 1 AND expiry > ?) as numOnlineUsers,
             (SELECT COUNT(*) FROM `keys` WHERE app = ? AND status = 'active') as numKeys
         ");
@@ -552,7 +684,7 @@ switch ($type_param) {
                 'version' => $app['version'] ?? '1.0'
             ],
             'nonce' => bin2hex(random_bytes(16))
-        ], $app_secret);
+        ], $session['enckey']);
         break;
     
     case 'getvar':
@@ -575,7 +707,7 @@ switch ($type_param) {
         send_response(true, "Variable fetched", [
             'response' => $var['msg'],
             'nonce' => bin2hex(random_bytes(16))
-        ], $app_secret);
+        ], $session['enckey']);
         break;
     
     case 'ban':
@@ -591,7 +723,7 @@ switch ($type_param) {
         if (ban_user($app_secret, $username, $reason)) {
             send_response(true, "User banned successfully", [
                 'nonce' => bin2hex(random_bytes(16))
-            ], $app_secret);
+            ], $session['enckey']);
         }
         
         send_response(false, "Failed to ban user", null, $session['enckey']);
@@ -605,12 +737,12 @@ switch ($type_param) {
         if (is_blacklisted($app_secret, $type, $value)) {
             send_response(true, "Value is blacklisted", [
                 'nonce' => bin2hex(random_bytes(16))
-            ], $app_secret);
+            ], $session['enckey']);
         }
         
         send_response(false, "Value is not blacklisted", [
             'nonce' => bin2hex(random_bytes(16))
-        ], $app_secret);
+        ], $session['enckey']);
         break;
     
     default:

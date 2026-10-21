@@ -32,7 +32,7 @@ $licenses_query = $conn->query("
     FROM `keys` k
     JOIN apps a ON k.app = a.secret
     JOIN accounts acc ON a.ownerid = acc.ownerid
-    LEFT JOIN end_users eu ON k.used_by = eu.username AND eu.app = k.app
+    LEFT JOIN users eu ON k.used_by = eu.username AND eu.app = k.app
     ORDER BY k.created_at DESC
     LIMIT 100
 ");
@@ -52,167 +52,169 @@ $license_stats = $conn->query("
 
 <!-- Success/Error Messages -->
 <?php if (!empty($action_error)): ?>
-<div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-exclamation-triangle text-red-400"></i>
-        <p class="text-red-300 font-medium"><?= htmlspecialchars($action_error) ?></p>
-    </div>
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-alert text-danger"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_error) ?></p>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($action_success)): ?>
-<div class="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-check-circle text-green-400"></i>
-        <p class="text-green-300 font-medium"><?= htmlspecialchars($action_success) ?></p>
-    </div>
+<div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-check-circle-outline text-success"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_success) ?></p>
 </div>
 <?php endif; ?>
 
 <!-- License Statistics -->
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-    <div class="stat-card rounded-lg p-4 hover-glow smooth-transition">
-        <div class="text-center">
-            <p class="text-gray-400 text-sm font-medium">Total Keys</p>
-            <p class="text-2xl font-bold mt-1 text-blue-400"><?= number_format($license_stats['total_keys']) ?></p>
+<div class="row g-2 mb-3">
+    <div class="col-md-4 col-lg-2">
+        <div class="card bg-dark border-secondary text-center h-100">
+            <div class="card-body py-2">
+                <p class="text-muted small fw-medium mb-0">Total Keys</p>
+                <h5 class="text-primary fw-bold mb-0"><?= number_format($license_stats['total_keys']) ?></h5>
+            </div>
         </div>
     </div>
-    <div class="stat-card rounded-lg p-4 hover-glow smooth-transition">
-        <div class="text-center">
-            <p class="text-gray-400 text-sm font-medium">Active</p>
-            <p class="text-2xl font-bold mt-1 text-green-400"><?= number_format($license_stats['active_keys']) ?></p>
+    <div class="col-md-4 col-lg-2">
+        <div class="card bg-dark border-secondary text-center h-100">
+            <div class="card-body py-2">
+                <p class="text-muted small fw-medium mb-0">Active</p>
+                <h5 class="text-success fw-bold mb-0"><?= number_format($license_stats['active_keys']) ?></h5>
+            </div>
         </div>
     </div>
-    <div class="stat-card rounded-lg p-4 hover-glow smooth-transition">
-        <div class="text-center">
-            <p class="text-gray-400 text-sm font-medium">Inactive</p>
-            <p class="text-2xl font-bold mt-1 text-gray-400"><?= number_format($license_stats['inactive_keys']) ?></p>
+    <div class="col-md-4 col-lg-2">
+        <div class="card bg-dark border-secondary text-center h-100">
+            <div class="card-body py-2">
+                <p class="text-muted small fw-medium mb-0">Inactive</p>
+                <h5 class="text-muted fw-bold mb-0"><?= number_format($license_stats['inactive_keys']) ?></h5>
+            </div>
         </div>
     </div>
-    <div class="stat-card rounded-lg p-4 hover-glow smooth-transition">
-        <div class="text-center">
-            <p class="text-gray-400 text-sm font-medium">Expired</p>
-            <p class="text-2xl font-bold mt-1 text-red-400"><?= number_format($license_stats['expired_keys']) ?></p>
+    <div class="col-md-4 col-lg-2">
+        <div class="card bg-dark border-secondary text-center h-100">
+            <div class="card-body py-2">
+                <p class="text-muted small fw-medium mb-0">Expired</p>
+                <h5 class="text-danger fw-bold mb-0"><?= number_format($license_stats['expired_keys']) ?></h5>
+            </div>
         </div>
     </div>
-    <div class="stat-card rounded-lg p-4 hover-glow smooth-transition">
-        <div class="text-center">
-            <p class="text-gray-400 text-sm font-medium">Valid</p>
-            <p class="text-2xl font-bold mt-1 text-yellow-400"><?= number_format($license_stats['valid_keys']) ?></p>
+    <div class="col-md-4 col-lg-2">
+        <div class="card bg-dark border-secondary text-center h-100">
+            <div class="card-body py-2">
+                <p class="text-muted small fw-medium mb-0">Valid</p>
+                <h5 class="text-warning fw-bold mb-0"><?= number_format($license_stats['valid_keys']) ?></h5>
+            </div>
         </div>
     </div>
-    <div class="stat-card rounded-lg p-4 hover-glow smooth-transition">
-        <div class="text-center">
-            <p class="text-gray-400 text-sm font-medium">Expired</p>
-            <p class="text-2xl font-bold mt-1 text-red-400"><?= number_format($license_stats['expired_count']) ?></p>
+    <div class="col-md-4 col-lg-2">
+        <div class="card bg-dark border-secondary text-center h-100">
+            <div class="card-body py-2">
+                <p class="text-muted small fw-medium mb-0">Expired</p>
+                <h5 class="text-danger fw-bold mb-0"><?= number_format($license_stats['expired_count']) ?></h5>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- License Management Table -->
-<div class="stat-card rounded-lg">
-    <div class="p-6 border-b border-[#2a2a4e]">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold">License Key Management</h3>
-            <div class="text-sm text-gray-400">
+<div class="card bg-dark border-secondary">
+    <div class="card-header border-secondary bg-transparent px-3 py-2">
+        <div class="d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0">License Key Management</h5>
+            <small class="text-muted">
                 Showing latest 100 keys
-            </div>
+            </small>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-[#0f0f1a]">
+    <div class="table-responsive">
+        <table class="table table-dark table-borderless table-hover align-middle mb-0">
+            <thead class="table-secondary">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">License Key</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Application</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Owner</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Expiry</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Used By</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">License Key</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Application</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Owner</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Status</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Expiry</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Used By</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Created</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-[#2a2a4e]">
+            <tbody>
                 <?php while ($key = $licenses_query->fetch_assoc()): ?>
-                <tr class="hover:bg-[#262641] transition">
-                    <td class="px-6 py-4">
-                        <div class="font-mono text-sm text-blue-400">
+                <tr>
+                    <td class="px-3 py-1">
+                        <div class="font-monospace small text-primary">
                             <?= htmlspecialchars(substr($key['license_key'], 0, 24)) ?>...
                         </div>
-                        <div class="text-xs text-gray-500 mt-1">
+                        <div class="text-secondary small mt-1">
                             Format: <?= htmlspecialchars($key['format']) ?>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm">
-                            <div class="font-semibold text-purple-400"><?= htmlspecialchars($key['app_name']) ?></div>
-                            <div class="text-xs text-gray-500 font-mono">Secret: <?= htmlspecialchars(substr($key['app_secret'], 0, 12)) ?>...</div>
-                        </div>
+                    <td class="px-3 py-1">
+                        <div class="fw-semibold small text-info"><?= htmlspecialchars($key['app_name']) ?></div>
+                        <div class="text-secondary small font-monospace">Secret: <?= htmlspecialchars(substr($key['app_secret'], 0, 12)) ?>...</div>
                     </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm">
-                            <div class="font-semibold text-green-400"><?= htmlspecialchars($key['owner_name']) ?></div>
-                            <?php if (!empty($key['created_by'])): ?>
-                                <div class="text-xs text-gray-500">Created by: <?= htmlspecialchars($key['created_by']) ?></div>
-                            <?php endif; ?>
-                        </div>
+                    <td class="px-3 py-1">
+                        <div class="fw-semibold small text-success"><?= htmlspecialchars($key['owner_name']) ?></div>
+                        <?php if (!empty($key['created_by'])): ?>
+                            <div class="text-secondary small">Created by: <?= htmlspecialchars($key['created_by']) ?></div>
+                        <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-3 py-1">
                         <?php
-                        $status_class = 'bg-gray-500/20 text-gray-400';
-                        if ($key['status'] === 'active') $status_class = 'bg-green-500/20 text-green-400';
-                        elseif ($key['status'] === 'inactive') $status_class = 'bg-yellow-500/20 text-yellow-400';
-                        elseif ($key['status'] === 'expired') $status_class = 'bg-red-500/20 text-red-400';
+                        $badge_class = 'bg-secondary';
+                        if ($key['status'] === 'active') $badge_class = 'bg-success';
+                        elseif ($key['status'] === 'inactive') $badge_class = 'bg-warning text-dark';
+                        elseif ($key['status'] === 'expired') $badge_class = 'bg-danger';
                         ?>
-                        <span class="px-2 py-1 <?= $status_class ?> text-xs rounded-full capitalize">
-                            <?= htmlspecialchars($key['status']) ?>
-                        </span>
+                        <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($key['status']) ?></span>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-400">
+                    <td class="px-3 py-1 text-muted small">
                         <?php if ($key['expiry'] == 0): ?>
-                            <span class="text-gray-500">Never</span>
+                            <span class="text-secondary">Never</span>
                         <?php elseif ($key['expiry'] <= time()): ?>
-                            <span class="text-red-400">Expired</span>
-                            <div class="text-xs text-gray-500">
+                            <span class="text-danger">Expired</span>
+                            <div class="text-secondary small">
                                 <?= date('M j, Y H:i', $key['expiry']) ?>
                             </div>
                         <?php else: ?>
-                            <span class="text-green-400">Active</span>
-                            <div class="text-xs text-gray-500">
+                            <span class="text-success">Active</span>
+                            <div class="text-secondary small">
                                 <?= date('M j, Y H:i', $key['expiry']) ?>
                             </div>
                         <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-400">
+                    <td class="px-3 py-1 text-muted small">
                         <?php if (!empty($key['used_by'])): ?>
-                            <div class="text-yellow-400"><?= htmlspecialchars($key['used_by']) ?></div>
+                            <div class="text-warning"><?= htmlspecialchars($key['used_by']) ?></div>
                             <?php if (!empty($key['used_at'])): ?>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-secondary small">
                                     <?= date('M j, H:i', strtotime($key['used_at'])) ?>
                                 </div>
                             <?php endif; ?>
                         <?php else: ?>
-                            <span class="text-gray-500">Not used</span>
+                            <span class="text-secondary">Not used</span>
                         <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-400">
+                    <td class="px-3 py-1 text-muted small">
                         <?= date('M j, Y', strtotime($key['created_at'])) ?>
-                        <div class="text-xs text-gray-500">
+                        <div class="text-secondary small">
                             <?= date('H:i', strtotime($key['created_at'])) ?>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <button onclick="viewKeyDetails(<?= $key['id'] ?>)" class="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs rounded hover:bg-blue-500/30 transition" title="View Details">
-                                <i class="fas fa-eye"></i>
+                    <td class="px-3 py-1">
+                        <div class="d-flex align-items-center gap-1">
+                            <button onclick="viewKeyDetails(<?= $key['id'] ?>)" class="btn btn-sm btn-outline-primary" title="View Details">
+                                <i class="mdi mdi-eye-outline"></i>
                             </button>
-                            <form method="POST" class="inline">
+                            <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="delete_key">
                                 <input type="hidden" name="key_id" value="<?= $key['id'] ?>">
-                                <button type="submit" class="px-3 py-1 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30 transition" onclick="return confirm('Delete this license key?')" title="Delete Key">
-                                    <i class="fas fa-trash"></i>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this license key?')" title="Delete Key">
+                                    <i class="mdi mdi-delete"></i>
                                 </button>
                             </form>
                         </div>
@@ -224,43 +226,35 @@ $license_stats = $conn->query("
     </div>
 
     <?php if ($licenses_query->num_rows === 0): ?>
-        <div class="p-12 text-center text-gray-400">
-            <i class="fas fa-key text-3xl mb-3"></i>
-            <p>No license keys found</p>
+        <div class="p-3 text-center text-muted">
+            <i class="mdi mdi-key fs-1 mb-2"></i>
+            <p class="mb-0">No license keys found</p>
         </div>
     <?php endif; ?>
 </div>
 
 <!-- Key Details Modal -->
-<div id="keyDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6 w-full max-w-lg mx-4">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold">License Key Details</h3>
-            <button onclick="closeModal('keyDetailsModal')" class="text-gray-400 hover:text-white">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div id="keyDetailsContent">
-            <!-- Content will be loaded here -->
+<div class="modal fade" id="keyDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold">License Key Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="keyDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
         </div>
     </div>
 </div>
 
 <script>
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+    var modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+    if (modal) modal.hide();
 }
 
 function viewKeyDetails(keyId) {
-    // For now, just show a simple alert. In a real implementation, you'd fetch details via AJAX
     alert('Key ID: ' + keyId + '\n\nDetailed view would show comprehensive license key information, usage history, and settings.');
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = event.target;
-    if (modal.classList.contains('bg-black')) {
-        modal.classList.add('hidden');
-    }
 }
 </script>

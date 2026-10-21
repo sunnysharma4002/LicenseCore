@@ -1,256 +1,119 @@
 <?php
-include 'includes/config.php';
-
-// If already logged in, redirect to dashboard
+@include_once 'includes/enhanced.php';
 if (is_logged_in()) {
-    header("Location: " . SITE_URL . "/admin/dashboard.php");
+    header("Location: " . SITE_URL . "/app/");
     exit();
 }
 ?>
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en" data-bs-theme="dark" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 <head>
-    <title>LicenseAuth - License Management System</title>
-    <meta charset="UTF-8">
+    <meta charset="utf-8" />
+    <title>LicenseAuth | Secure Authentication System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #fff;
-            color: #333;
-            line-height: 1.6;
-        }
-        
-        .header {
-            background: white;
-            border-bottom: 1px solid #eee;
-            padding: 20px 0;
-        }
-        
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #667eea;
-        }
-        
-        .nav {
-            display: flex;
-            gap: 30px;
-            align-items: center;
-        }
-        
-        .nav a {
-            color: #333;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-        
-        .nav a:hover {
-            color: #667eea;
-        }
-        
-        .auth-buttons {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .btn {
-            padding: 10px 24px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-secondary {
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-        
-        .btn-secondary:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        .hero {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 100px 20px;
-            text-align: center;
-        }
-        
-        .hero h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .hero p {
-            font-size: 20px;
-            color: #666;
-            margin-bottom: 40px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            margin: 80px auto;
-            padding: 0 20px;
-        }
-        
-        .feature {
-            background: #f9f9f9;
-            padding: 30px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            transition: all 0.3s;
-        }
-        
-        .feature:hover {
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            transform: translateY(-4px);
-        }
-        
-        .feature h3 {
-            font-size: 20px;
-            margin-bottom: 12px;
-            color: #333;
-        }
-        
-        .feature p {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        .cta {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 20px;
-            text-align: center;
-            margin-top: 80px;
-        }
-        
-        .cta h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
-        
-        .cta p {
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-        
-        .footer {
-            background: #333;
-            color: #999;
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 50px;
-        }
-        
-        .cta-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-    </style>
+    <meta content="LicenseAuth - Secure Authentication System, C++, C#, Python, PHP, Ruby, JavaScript, VB.Net, Java, Rush, Go, Lua, Perl" name="description" />
+    <meta content="LicenseAuth" name="author" />
+    <link rel="shortcut icon" href="<?= SITE_URL ?>/assets/images/favicon.ico">
+    <script src="<?= SITE_URL ?>/assets/js/layout.js"></script>
+    <link href="<?= SITE_URL ?>/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/app.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?= SITE_URL ?>/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">🔐 LicenseAuth</div>
-            <nav class="nav">
-                <a href="#features">Features</a>
-                <a href="#about">About</a>
-                <div class="auth-buttons">
-                    <a href="login.php" class="btn btn-secondary">Sign In</a>
-                    <a href="register.php" class="btn btn-primary">Get Started</a>
+    <div class="auth-page-wrapper pt-5">
+        <div class="auth-page-content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center mt-sm-5 mb-4 text-white-50">
+                            <div>
+                                <a href="/" class="d-inline-block auth-logo">
+                                    <img src="<?= SITE_URL ?>/assets/images/logo-light.png" alt="" height="35">
+                                </a>
+                            </div>
+                            <p class="mt-3 fs-15 fw-medium">Authentication System</p>
+                        </div>
+                    </div>
                 </div>
-            </nav>
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="text-center mb-5">
+                            <h1 class="display-4 fw-bold text-white mb-3">The better way to manage your application with LicenseAuth</h1>
+                            <p class="lead text-muted mb-4">Secure, scalable license management for your software applications</p>
+                            <div class="mt-4">
+                                <a href="./register/" class="btn btn-success btn-lg me-3">Get Started</a>
+                                <a href="./login/" class="btn btn-outline-light btn-lg">Sign in</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row justify-content-center mt-5">
+                    <div class="col-lg-10">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="card card-bg-fill h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="avatar-sm mx-auto mb-3">
+                                            <span class="avatar-title rounded-circle bg-primary bg-soft text-primary fs-24">
+                                                <i class="ri-key-2-line"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="card-title">License Management</h5>
+                                        <p class="card-text text-muted">Generate, validate, and manage license keys with ease</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-bg-fill h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="avatar-sm mx-auto mb-3">
+                                            <span class="avatar-title rounded-circle bg-success bg-soft text-success fs-24">
+                                                <i class="ri-shield-check-line"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="card-title">Secure API</h5>
+                                        <p class="card-text text-muted">HMAC-SHA256 signed requests with session management</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-bg-fill h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="avatar-sm mx-auto mb-3">
+                                            <span class="avatar-title rounded-circle bg-warning bg-soft text-warning fs-24">
+                                                <i class="ri-dashboard-3-line"></i>
+                                            </span>
+                                        </div>
+                                        <h5 class="card-title">Admin Dashboard</h5>
+                                        <p class="card-text text-muted">Complete oversight with analytics and user management</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        <footer class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center">
+                            <p class="mb-0 text-muted">&copy; 2021 - <?= date('Y') ?> LicenseAuth. Made with <i class="mdi mdi-heart text-danger"></i> by FENIX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
-    
-    <div class="hero">
-        <h1>The Better Way to Manage Your Application</h1>
-        <p>Simple, secure license management for your software. Generate, validate, and track licenses with ease.</p>
-        <a href="register.php" class="btn btn-primary">Get Started Free →</a>
-    </div>
-    
-    <div class="features" id="features">
-        <div class="feature">
-            <h3>🔑 License Generation</h3>
-            <p>Generate unique, secure license keys for your applications instantly with customizable options.</p>
-        </div>
-        <div class="feature">
-            <h3>⚡ Real-time Validation</h3>
-            <p>Validate licenses in real-time with our powerful API. Check status, activations, and expiry dates.</p>
-        </div>
-        <div class="feature">
-            <h3>📊 Analytics Dashboard</h3>
-            <p>Track license activations, usage patterns, and customer insights from an intuitive dashboard.</p>
-        </div>
-        <div class="feature">
-            <h3>🌍 Multiple Applications</h3>
-            <p>Manage licenses for multiple applications from a single account. Organize and track everything.</p>
-        </div>
-        <div class="feature">
-            <h3>🛡️ Advanced Security</h3>
-            <p>Encrypted keys, secure API endpoints, and role-based access control for maximum security.</p>
-        </div>
-        <div class="feature">
-            <h3>🔄 Easy Integration</h3>
-            <p>Simple REST API for integration. Just a few lines of code to add license validation to your app.</p>
-        </div>
-    </div>
-    
-    <div class="cta">
-        <div class="cta-container">
-            <h2>Ready to Protect Your Software?</h2>
-            <p>Join thousands of developers using LicenseAuth</p>
-            <a href="register.php" class="btn btn-secondary" style="background: white; color: #667eea; border: none;">Create Free Account →</a>
-        </div>
-    </div>
-    
-    <div class="footer">
-        <p>© 2021 - 2025 LicenseAuth. Made with ❤ by DeadShot</p>
-    </div>
+    <script src="<?= SITE_URL ?>/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/node-waves/waves.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/feather-icons/feather.min.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/plugins/lord-icon-2.1.0.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/plugins.js"></script>
+    <script src="<?= SITE_URL ?>/assets/libs/particles.js/particles.js"></script>
+    <script src="<?= SITE_URL ?>/assets/js/pages/particles.app.js"></script>
 </body>
 </html>

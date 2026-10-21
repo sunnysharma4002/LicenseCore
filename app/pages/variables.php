@@ -1,49 +1,96 @@
-<?php // Variables Page ?>
-<div class="flex justify-between items-center mb-8">
-    <h2 class="text-2xl font-bold">Variables</h2>
-    <button onclick="document.getElementById('addVarModal').classList.remove('hidden')" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
-        <i class="fas fa-plus mr-2"></i> Add Variable
-    </button>
-</div>
+<?php
+if (!$selected_app_data) {
+    echo '<div class="text-center py-5"><i class="ri-code-line fs-1 text-muted mb-3 d-block"></i><h5 class="text-muted">Select an application first</h5></div>';
+    return;
+}
+$app_secret = $selected_app_data['secret'];
 
-<!-- Add Variable Modal -->
-<div id="addVarModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-    <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-8 max-w-md w-full mx-4">
-        <h3 class="text-xl font-bold mb-6">Add Variable</h3>
-        <form class="space-y-4">
-            <input type="text" placeholder="Variable Name" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
-            <input type="text" placeholder="Variable Value" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
-            <div class="flex gap-3">
-                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">Add</button>
-                <button type="button" onclick="document.getElementById('addVarModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-[#262641] hover:bg-[#2a2a4e] rounded-lg transition font-medium">Cancel</button>
+$stmt = $conn->prepare("SELECT * FROM vars WHERE app = ? ORDER BY created_at DESC");
+$stmt->bind_param("s", $app_secret);
+$stmt->execute();
+$vars_result = $stmt->get_result();
+$vars = [];
+while ($var = $vars_result->fetch_assoc()) {
+    $vars[] = $var;
+}
+?>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="mb-0">Variables</h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVarModal"><i class="ri-add-line align-middle me-1"></i> Add Variable</button>
+                </div>
+                <p class="text-muted small mb-3">Global variables that can be accessed by users via API.</p>
+                <div class="table-responsive">
+                    <table class="table table-nowrap align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Variable Name</th>
+                                <th>Value</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($vars)): ?>
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <i class="ri-code-line fs-1 text-muted mb-3 d-block"></i>
+                                    <h6 class="text-muted">No variables yet</h6>
+                                </td>
+                            </tr>
+                            <?php else: ?>
+                                <?php foreach ($vars as $var): ?>
+                                <tr>
+                                    <td><code><?= htmlspecialchars($var['name']) ?></code></td>
+                                    <td class="text-truncate" style="max-width:300px"><small class="text-muted"><?= htmlspecialchars($var['value']) ?></small></td>
+                                    <td><small class="text-muted"><?= date('M d, Y', strtotime($var['created_at'])) ?></small></td>
+                                    <td>
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Delete this variable?')">
+                                            <input type="hidden" name="action" value="delete_var">
+                                            <input type="hidden" name="id" value="<?= $var['id'] ?>">
+                                            <input type="hidden" name="app" value="<?= htmlspecialchars($app_secret) ?>">
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="ri-delete-bin-line"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<!-- Variables Table -->
-<div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg overflow-hidden">
-    <div class="p-6 border-b border-[#2a2a4e]">
-        <p class="text-gray-400">Global variables that can be accessed by users</p>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-[#262641] border-b border-[#2a2a4e]">
-                <tr>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Variable Name</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Value</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Created</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-[#2a2a4e]">
-                <tr class="hover:bg-[#262641] transition">
-                    <td colspan="4" class="px-6 py-12 text-center text-gray-400">
-                        <i class="fas fa-inbox text-3xl mb-3 block"></i>
-                        No variables yet
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+<div class="modal fade" id="addVarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Variable</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_var">
+                    <input type="hidden" name="app" value="<?= htmlspecialchars($app_secret) ?>">
+                    <div class="mb-3">
+                        <label class="form-label">Variable Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g., welcome_message" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Value</label>
+                        <input type="text" name="value" class="form-control" placeholder="Variable value" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>

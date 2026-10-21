@@ -1,56 +1,64 @@
 <?php // Profile Page ?>
-<h2 class="text-2xl font-bold mb-8">My Profile</h2>
+<h4 class="fw-bold mb-4">My Profile</h4>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="row g-3">
     <!-- Profile Card -->
-    <div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6">
-        <div class="text-center mb-6">
-            <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center mb-4">
-                <i class="fas fa-user text-white text-3xl"></i>
+    <div class="col-lg-4">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body text-center mb-3">
+                <div class="d-flex align-items-center justify-content-center mx-auto rounded-circle bg-gradient mb-3" style="width:96px;height:96px;background:linear-gradient(135deg,#60a5fa,#7c3aed)">
+                    <i class="mdi mdi-account text-white fs-2"></i>
+                </div>
+                <h5 class="card-title fw-bold mb-0"><?= htmlspecialchars($user['username']) ?></h5>
+                <p class="text-muted small mt-1 mb-0"><?= htmlspecialchars($user['email']) ?></p>
             </div>
-            <h3 class="text-xl font-bold"><?= htmlspecialchars($user['username']) ?></h3>
-            <p class="text-gray-400 text-sm mt-1"><?= htmlspecialchars($user['email']) ?></p>
-        </div>
-        
-        <div class="space-y-3">
-            <div class="bg-[#262641] rounded-lg p-3">
-                <p class="text-xs text-gray-400">Account ID</p>
-                <p class="font-mono text-sm mt-1"><?= substr($ownerid, 0, 16) ?>...</p>
-            </div>
-            <div class="bg-[#262641] rounded-lg p-3">
-                <p class="text-xs text-gray-400">Member Since</p>
-                <p class="text-sm mt-1"><?= date('M d, Y', strtotime($user['created_at'])) ?></p>
+
+            <div class="card-footer bg-transparent border-secondary">
+                <div class="d-flex flex-column gap-2">
+                    <div class="bg-secondary rounded p-3">
+                        <p class="small text-muted mb-0">Account ID</p>
+                        <p class="font-monospace small mt-1 mb-0"><?= substr($ownerid, 0, 16) ?>...</p>
+                    </div>
+                    <div class="bg-secondary rounded p-3">
+                        <p class="small text-muted mb-0">Member Since</p>
+                        <p class="small mt-1 mb-0"><?= date('M d, Y', strtotime($user['created_at'])) ?></p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Edit Profile -->
-    <div class="lg:col-span-2 bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6">
-        <h3 class="text-lg font-bold mb-6">Edit Profile</h3>
-        
-        <form class="space-y-6">
-            <div>
-                <label class="block text-sm font-medium mb-2">Username</label>
-                <input type="text" value="<?= htmlspecialchars($user['username']) ?>" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white focus:outline-none focus:border-blue-500">
+    <div class="col-lg-8">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Edit Profile</h5>
+
+                <form class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label small mb-1">Username</label>
+                        <input type="text" value="<?= htmlspecialchars($user['username']) ?>" class="form-control bg-dark border-secondary text-light">
+                    </div>
+
+                    <div>
+                        <label class="form-label small mb-1">Email</label>
+                        <input type="email" value="<?= htmlspecialchars($user['email']) ?>" class="form-control bg-dark border-secondary text-light">
+                    </div>
+
+                    <div class="border-top border-secondary pt-3">
+                        <h6 class="fw-semibold mb-3">Change Password</h6>
+                        <div class="d-flex flex-column gap-3">
+                            <input type="password" placeholder="Current Password" class="form-control bg-dark border-secondary text-light">
+                            <input type="password" placeholder="New Password" class="form-control bg-dark border-secondary text-light">
+                            <input type="password" placeholder="Confirm New Password" class="form-control bg-dark border-secondary text-light">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary fw-medium">
+                        <i class="mdi mdi-content-save me-2"></i> Save Changes
+                    </button>
+                </form>
             </div>
-            
-            <div>
-                <label class="block text-sm font-medium mb-2">Email</label>
-                <input type="email" value="<?= htmlspecialchars($user['email']) ?>" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white focus:outline-none focus:border-blue-500">
-            </div>
-            
-            <div class="border-t border-[#2a2a4e] pt-6">
-                <h4 class="font-semibold mb-4">Change Password</h4>
-                <div class="space-y-4">
-                    <input type="password" placeholder="Current Password" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
-                    <input type="password" placeholder="New Password" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
-                    <input type="password" placeholder="Confirm New Password" class="w-full px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
-                </div>
-            </div>
-            
-            <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
-                <i class="fas fa-save mr-2"></i> Save Changes
-            </button>
-        </form>
+        </div>
     </div>
 </div>

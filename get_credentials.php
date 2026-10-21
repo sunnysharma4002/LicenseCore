@@ -19,7 +19,7 @@ $result = $stmt->get_result();
 if ($result->num_rows === 0) {
     echo "No applications found in database!\n";
     echo "\nYou need to create an application first.\n";
-    echo "Go to: http://localhost/licenceauth/app/ and create an app\n\n";
+    echo "Go to: /licenceauth/app/ and create an app\n\n";
     exit;
 }
 

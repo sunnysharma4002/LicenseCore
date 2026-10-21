@@ -5,6 +5,8 @@
  * This file provides a visual setup wizard for LicenseAuth
  */
 
+require_once __DIR__ . '/includes/config.php';
+
 // Check PHP version
 $php_version = phpversion();
 $php_ok = version_compare($php_version, '7.4', '>=');
@@ -19,7 +21,7 @@ $openssl_ok = extension_loaded('openssl');
 $db_ok = false;
 $db_error = '';
 try {
-    $test_conn = new mysqli('localhost', 'root', '');
+    $test_conn = new mysqli(DB_HOST, DB_USER, DB_PASS);
     if ($test_conn->connect_error) {
         $db_error = $test_conn->connect_error;
     } else {

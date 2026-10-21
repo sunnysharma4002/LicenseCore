@@ -1,41 +1,45 @@
 <?php // API Keys Page ?>
-<div class="flex justify-between items-center mb-8">
-    <h2 class="text-2xl font-bold">API Keys</h2>
-    <button class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
-        <i class="fas fa-plus mr-2"></i> Generate API Key
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-bold">API Keys</h4>
+    <button class="btn btn-primary">
+        <i class="mdi mdi-plus me-2"></i> Generate API Key
     </button>
 </div>
 
-<div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg p-6 mb-8">
-    <h3 class="text-lg font-bold mb-4">Your API Keys</h3>
-    <p class="text-gray-400 text-sm mb-6">API keys allow you to integrate LicenseAuth into your applications.</p>
-    
-    <div class="space-y-3">
-        <div class="bg-[#262641] rounded-lg p-4 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <i class="fas fa-key text-blue-400 text-xl"></i>
-                <div>
-                    <p class="font-semibold">Production API Key</p>
-                    <p class="font-mono text-sm text-gray-400 mt-1">sk_live_************</p>
+<div class="card bg-dark border-secondary">
+    <div class="card-body">
+        <h5 class="card-title fw-bold mb-3">Your API Keys</h5>
+        <p class="text-muted small mb-3">API keys allow you to integrate LicenseAuth into your applications.</p>
+
+        <div class="d-flex flex-column gap-2">
+            <div class="bg-secondary rounded p-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="mdi mdi-key text-primary fs-5"></i>
+                    <div>
+                        <p class="fw-semibold mb-0">Production API Key</p>
+                        <p class="font-monospace small text-muted mt-1 mb-0">sk_live_************</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex gap-2">
-                <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded transition text-sm">
-                    <i class="fas fa-eye mr-1"></i> Reveal
-                </button>
-                <button class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded transition text-sm">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-sm">
+                        <i class="mdi mdi-eye-outline me-1"></i> Reveal
+                    </button>
+                    <button class="btn btn-danger btn-sm">
+                        <i class="mdi mdi-delete"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- API Documentation Link -->
-<div class="bg-[#1a1a2e] border border-blue-500/50 rounded-lg p-6">
-    <h3 class="text-lg font-bold mb-2">API Documentation</h3>
-    <p class="text-gray-400 text-sm mb-4">Learn how to integrate our API into your applications</p>
-    <a href="?page=documentation" class="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-medium">
-        <i class="fas fa-book mr-2"></i> View Documentation
-    </a>
+<div class="card bg-dark border-primary border-opacity-50">
+    <div class="card-body">
+        <h5 class="card-title fw-bold mb-2">API Documentation</h5>
+        <p class="text-muted small mb-3">Learn how to integrate our API into your applications</p>
+        <a href="?page=documentation" class="btn btn-primary">
+            <i class="mdi mdi-book-open-variant me-2"></i> View Documentation
+        </a>
+    </div>
 </div>

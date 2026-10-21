@@ -59,213 +59,223 @@ $active_apps = $conn->query("
 
 <!-- Success/Error Messages -->
 <?php if (!empty($action_error)): ?>
-<div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-exclamation-triangle text-red-400"></i>
-        <p class="text-red-300 font-medium"><?= htmlspecialchars($action_error) ?></p>
-    </div>
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-alert text-danger"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_error) ?></p>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($action_success)): ?>
-<div class="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-    <div class="flex items-center gap-3">
-        <i class="fas fa-check-circle text-green-400"></i>
-        <p class="text-green-300 font-medium"><?= htmlspecialchars($action_success) ?></p>
-    </div>
+<div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+    <i class="mdi mdi-check-circle-outline text-success"></i>
+    <p class="mb-0 fw-medium"><?= htmlspecialchars($action_success) ?></p>
 </div>
 <?php endif; ?>
 
 <!-- Log Statistics -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Total Logs</p>
-                <p class="text-3xl font-bold mt-2 text-blue-400"><?= number_format($log_stats['total_logs']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <i class="fas fa-history text-blue-400 text-2xl"></i>
+<div class="row g-3 mb-3">
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Total Logs</p>
+                        <h3 class="text-primary fw-bold mb-0"><?= number_format($log_stats['total_logs']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-primary bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-history text-primary fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-clock-outline text-success me-1"></i> Last 24h: <?= number_format($log_stats['logs_last_24h']) ?></small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-clock text-green-400 mr-1"></i> Last 24h: <?= number_format($log_stats['logs_last_24h']) ?></p>
     </div>
 
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Active Apps</p>
-                <p class="text-3xl font-bold mt-2 text-purple-400"><?= number_format($log_stats['unique_apps']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <i class="fas fa-cubes text-purple-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Active Apps</p>
+                        <h3 class="text-info fw-bold mb-0"><?= number_format($log_stats['unique_apps']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-info bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-cubes text-info fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-account-group text-primary me-1"></i> With activity</small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-users text-blue-400 mr-1"></i> With activity</p>
     </div>
 
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Active Users</p>
-                <p class="text-3xl font-bold mt-2 text-green-400"><?= number_format($log_stats['unique_users']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <i class="fas fa-user text-green-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Active Users</p>
+                        <h3 class="text-success fw-bold mb-0"><?= number_format($log_stats['unique_users']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-success bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-account text-success fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-clock-outline text-warning me-1"></i> Last hour: <?= number_format($log_stats['logs_last_hour']) ?></small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-clock text-yellow-400 mr-1"></i> Last hour: <?= number_format($log_stats['logs_last_hour']) ?></p>
     </div>
 
-    <div class="stat-card rounded-lg p-6 hover-glow smooth-transition">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-400 text-sm font-medium">Unique IPs</p>
-                <p class="text-3xl font-bold mt-2 text-yellow-400"><?= number_format($log_stats['unique_ips']) ?></p>
-            </div>
-            <div class="w-16 h-16 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                <i class="fas fa-globe text-yellow-400 text-2xl"></i>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-dark border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-muted small fw-medium mb-1">Unique IPs</p>
+                        <h3 class="text-warning fw-bold mb-0"><?= number_format($log_stats['unique_ips']) ?></h3>
+                    </div>
+                    <div style="width:48px;height:48px" class="rounded bg-warning bg-opacity-25 d-flex align-items-center justify-content-center">
+                        <i class="mdi mdi-web text-warning fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2"><i class="mdi mdi-lan text-primary me-1"></i> Different sources</small>
             </div>
         </div>
-        <p class="text-xs text-gray-400 mt-4"><i class="fas fa-network-wired text-indigo-400 mr-1"></i> Different sources</p>
     </div>
 </div>
 
 <!-- Top Active Users & Apps -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<div class="row g-3 mb-3">
     <!-- Most Active Users -->
-    <div class="stat-card rounded-lg">
-        <div class="p-6 border-b border-[#2a2a4e]">
-            <h3 class="text-lg font-bold">Most Active Users</h3>
-        </div>
-        <div class="divide-y divide-[#2a2a4e]">
-            <?php if ($active_users->num_rows > 0): ?>
-                <?php while ($user = $active_users->fetch_assoc()): ?>
-                <div class="p-4 hover:bg-[#262641] transition">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                                <i class="fas fa-user text-white text-xs"></i>
+    <div class="col-lg-6">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary bg-transparent px-3 py-2">
+                <h5 class="fw-bold mb-0">Most Active Users</h5>
+            </div>
+            <div>
+                <?php if ($active_users->num_rows > 0): ?>
+                    <?php while ($user_row = $active_users->fetch_assoc()): ?>
+                    <div class="px-3 py-2 border-bottom border-secondary">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:32px;height:32px" class="rounded-circle bg-success bg-opacity-25 d-flex align-items-center justify-content-center">
+                                    <i class="mdi mdi-account text-success small"></i>
+                                </div>
+                                <div>
+                                    <p class="fw-semibold small mb-0"><?= htmlspecialchars($user_row['user']) ?></p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-semibold text-sm text-white"><?= htmlspecialchars($user['user']) ?></p>
+                            <div class="text-end">
+                                <span class="badge bg-primary"><?= number_format($user_row['log_count']) ?> logs</span>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">
-                                <?= number_format($user['log_count']) ?> logs
-                            </span>
                         </div>
                     </div>
-                </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-8 text-center text-gray-400">
-                    <i class="fas fa-users text-2xl mb-2"></i>
-                    <p>No user activity yet</p>
-                </div>
-            <?php endif; ?>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="p-3 text-center text-muted">
+                        <i class="mdi mdi-account-group fs-1 mb-2"></i>
+                        <p class="mb-0">No user activity yet</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
     <!-- Most Active Apps -->
-    <div class="stat-card rounded-lg">
-        <div class="p-6 border-b border-[#2a2a4e]">
-            <h3 class="text-lg font-bold">Most Active Applications</h3>
-        </div>
-        <div class="divide-y divide-[#2a2a4e]">
-            <?php if ($active_apps->num_rows > 0): ?>
-                <?php while ($app = $active_apps->fetch_assoc()): ?>
-                <div class="p-4 hover:bg-[#262641] transition">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-                                <i class="fas fa-cube text-white text-xs"></i>
+    <div class="col-lg-6">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header border-secondary bg-transparent px-3 py-2">
+                <h5 class="fw-bold mb-0">Most Active Applications</h5>
+            </div>
+            <div>
+                <?php if ($active_apps->num_rows > 0): ?>
+                    <?php while ($app_row = $active_apps->fetch_assoc()): ?>
+                    <div class="px-3 py-2 border-bottom border-secondary">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:32px;height:32px" class="rounded bg-primary bg-opacity-25 d-flex align-items-center justify-content-center">
+                                    <i class="mdi mdi-cube-outline text-primary small"></i>
+                                </div>
+                                <div>
+                                    <p class="fw-semibold small mb-0"><?= htmlspecialchars($app_row['name'] ?: 'Unknown App') ?></p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-semibold text-sm text-white"><?= htmlspecialchars($app['name'] ?: 'Unknown App') ?></p>
+                            <div class="text-end">
+                                <span class="badge bg-info"><?= number_format($app_row['log_count']) ?> logs</span>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">
-                                <?= number_format($app['log_count']) ?> logs
-                            </span>
                         </div>
                     </div>
-                </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div class="p-8 text-center text-gray-400">
-                    <i class="fas fa-cubes text-2xl mb-2"></i>
-                    <p>No app activity yet</p>
-                </div>
-            <?php endif; ?>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <div class="p-3 text-center text-muted">
+                        <i class="mdi mdi-cubes fs-1 mb-2"></i>
+                        <p class="mb-0">No app activity yet</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- System Logs Table -->
-<div class="stat-card rounded-lg">
-    <div class="p-6 border-b border-[#2a2a4e]">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold">System Logs</h3>
-            <div class="flex items-center gap-4">
-                <div class="text-sm text-gray-400">
+<div class="card bg-dark border-secondary">
+    <div class="card-header border-secondary bg-transparent px-3 py-2">
+        <div class="d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0">System Logs</h5>
+            <div class="d-flex align-items-center gap-3">
+                <small class="text-muted">
                     Page <?= $page ?> of <?= $total_pages ?> (<?= number_format($total_logs) ?> total)
-                </div>
-                <div class="flex gap-2">
+                </small>
+                <div class="d-flex gap-1">
                     <?php if ($page > 1): ?>
-                        <a href="?page=logs&p=<?= $page - 1 ?>" class="px-3 py-1 bg-[#262641] hover:bg-[#2a2a4e] text-white text-sm rounded transition">Previous</a>
+                        <a href="?page=logs&p=<?= $page - 1 ?>" class="btn btn-sm btn-outline-secondary">Previous</a>
                     <?php endif; ?>
                     <?php if ($page < $total_pages): ?>
-                        <a href="?page=logs&p=<?= $page + 1 ?>" class="px-3 py-1 bg-[#262641] hover:bg-[#2a2a4e] text-white text-sm rounded transition">Next</a>
+                        <a href="?page=logs&p=<?= $page + 1 ?>" class="btn btn-sm btn-outline-secondary">Next</a>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-[#0f0f1a]">
+    <div class="table-responsive">
+        <table class="table table-dark table-borderless table-hover align-middle mb-0">
+            <thead class="table-secondary">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Time</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Application</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">IP Address</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Message</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Time</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Action</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">User</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Application</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">IP Address</th>
+                    <th class="small fw-medium text-muted text-uppercase px-3 py-1">Message</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-[#2a2a4e]">
+            <tbody>
                 <?php while ($log = $logs_query->fetch_assoc()): ?>
-                <tr class="hover:bg-[#262641] transition">
-                    <td class="px-6 py-4 text-sm text-gray-400">
+                <tr>
+                    <td class="px-3 py-1 text-muted small">
                         <?= date('M j, Y', strtotime($log['created_at'])) ?>
-                        <div class="text-xs text-gray-500">
+                        <div class="text-secondary small">
                             <?= date('H:i:s', strtotime($log['created_at'])) ?>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded-full">
-                            <?= htmlspecialchars($log['action']) ?>
-                        </span>
+                    <td class="px-3 py-1">
+                        <span class="badge bg-primary"><?= htmlspecialchars($log['action']) ?></span>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-300">
+                    <td class="px-3 py-1 small">
                         <?= htmlspecialchars($log['user'] ?: 'System') ?>
                     </td>
-                    <td class="px-6 py-4 text-sm">
+                    <td class="px-3 py-1 small">
                         <?php if (!empty($log['app_name'])): ?>
-                            <span class="text-purple-400"><?= htmlspecialchars($log['app_name']) ?></span>
+                            <span class="text-info"><?= htmlspecialchars($log['app_name']) ?></span>
                         <?php else: ?>
-                            <span class="text-gray-500">-</span>
+                            <span class="text-secondary">-</span>
                         <?php endif; ?>
                     </td>
-                    <td class="px-6 py-4 text-sm font-mono text-gray-400">
+                    <td class="px-3 py-1 small font-monospace text-muted">
                         <?= htmlspecialchars($log['ip']) ?>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-300 max-w-md">
-                        <div class="truncate" title="<?= htmlspecialchars($log['message']) ?>">
+                    <td class="px-3 py-1 small" style="max-width:300px">
+                        <div class="text-truncate" title="<?= htmlspecialchars($log['message']) ?>">
                             <?= htmlspecialchars($log['message']) ?>
                         </div>
                     </td>
@@ -276,9 +286,9 @@ $active_apps = $conn->query("
     </div>
 
     <?php if ($logs_query->num_rows === 0): ?>
-        <div class="p-12 text-center text-gray-400">
-            <i class="fas fa-history text-3xl mb-3"></i>
-            <p>No logs found</p>
+        <div class="p-3 text-center text-muted">
+            <i class="mdi mdi-history fs-1 mb-2"></i>
+            <p class="mb-0">No logs found</p>
         </div>
     <?php endif; ?>
 </div>

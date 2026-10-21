@@ -1,6 +1,6 @@
 <?php
-session_start();
+require_once '../includes/enhanced.php';
 session_destroy();
-header("Location: " . (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'http://localhost/licenceauth/'));
+header("Location: " . SITE_URL . "/login/");
 exit();
 ?>

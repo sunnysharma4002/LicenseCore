@@ -1,39 +1,69 @@
-<?php // Logs Page 
+<?php
+if (!$selected_app_data) {
+    echo '<div class="text-center py-5"><i class="ri-archive-line fs-1 text-muted mb-3 d-block"></i><h5 class="text-muted">Select an application first</h5></div>';
+    return;
+}
 $app_secret = $selected_app_data['secret'];
-?>
-<div class="flex justify-between items-center mb-8">
-    <h2 class="text-2xl font-bold">Activity Logs</h2>
-    <div class="flex gap-3">
-        <select class="px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white focus:outline-none focus:border-blue-500">
-            <option>All Events</option>
-            <option>Login</option>
-            <option>Register</option>
-            <option>License Used</option>
-        </select>
-        <input type="date" class="px-4 py-2 bg-[#262641] border border-[#3a3a5e] rounded-lg text-white focus:outline-none focus:border-blue-500">
-    </div>
-</div>
 
-<div class="bg-[#1a1a2e] border border-[#2a2a4e] rounded-lg">
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-[#262641] border-b border-[#2a2a4e]">
-                <tr>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Event</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">User</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">IP Address</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Details</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold">Timestamp</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-[#2a2a4e]">
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
-                        <i class="fas fa-history text-3xl mb-3 block"></i>
-                        No activity logs yet
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+$stmt = $conn->prepare("SELECT * FROM logs WHERE logapp = ? ORDER BY created_at DESC LIMIT 500");
+$stmt->bind_param("s", $app_secret);
+$stmt->execute();
+$logs_result = $stmt->get_result();
+$logs = [];
+while ($log = $logs_result->fetch_assoc()) {
+    $logs[] = $log;
+}
+?>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="mb-0">Activity Logs</h5>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" style="width:auto" onchange="filterLogs()">
+                            <option value="">All Events</option>
+                            <option value="init">Init</option>
+                            <option value="login">Login</option>
+                            <option value="register">Register</option>
+                            <option value="license">License</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-nowrap align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Event</th>
+                                <th>User</th>
+                                <th>IP Address</th>
+                                <th>Details</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($logs)): ?>
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <i class="ri-archive-line fs-1 text-muted mb-3 d-block"></i>
+                                    <h6 class="text-muted">No activity logs yet</h6>
+                                </td>
+                            </tr>
+                            <?php else: ?>
+                                <?php foreach ($logs as $log): ?>
+                                <tr>
+                                    <td><span class="badge bg-info-subtle text-info"><?= htmlspecialchars($log['type'] ?? 'N/A') ?></span></td>
+                                    <td><small><?= htmlspecialchars($log['username'] ?? 'N/A') ?></small></td>
+                                    <td><code class="small text-muted"><?= htmlspecialchars($log['ip'] ?? 'N/A') ?></code></td>
+                                    <td><small class="text-muted"><?= htmlspecialchars($log['info'] ?? '') ?></small></td>
+                                    <td><small class="text-muted"><?= date('M d, Y H:i', strtotime($log['created_at'])) ?></small></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
