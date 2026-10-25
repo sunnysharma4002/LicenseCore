@@ -43,7 +43,7 @@ cd LicenseCore
    ```bash
    php db_setup.php
    ```
-   Or visit `http://localhost/LicenseCore/db_setup.php` in your browser. This unified installer includes both the standard and enhanced tables, plus license durations and multi-device support for new installations. It uses credentials from `includes/config.php`. Existing tables and data are preserved; use the license migration for older installations.
+   Or visit `http://localhost/LicenseCore/db_setup.php` in your browser. This unified installer includes both the standard and enhanced tables, plus license durations and multi-device support for new installations. It uses credentials from `includes/config.php`. Existing tables and data are preserved.
 
 ### 3. Configuration
 1. Update database credentials in `includes/config.php` if needed
@@ -107,7 +107,7 @@ The comprehensive admin dashboard provides system-wide management capabilities:
 
 #### API 1.2 license activation update
 
-After installing/updating the database, run `php migrate_license_keys.php` once before using the API or dashboard. This adds license durations and per-key device slots. Existing unused keys retain their original duration and start counting down on first successful activation; used keys retain their expiry.
+New installations include license durations and per-key device slots through `db_setup.php`. Unused keys start counting down on first successful activation; used keys retain their expiry. Previously migrated installations do not need to repeat the migration.
 
 In **Licenses → Create keys**, set **Maximum Devices** (default: 1). Existing keys can be changed using the Devices column in the license list. Clients must send a stable, nonempty `hwid` with `type=license`. Repeat logins from an allowed device do not consume another slot or restart expiry. All devices share the key's expiry. Lowering the limit rejects excess devices on their next key login, prioritizing the original device. A limit of 1 allows only the original device. The seller API accepts `max_devices` too.
 
