@@ -61,8 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
     <meta charset="utf-8" />
     <title>Reset Password - <?= SITE_NAME ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="LicenseAuth - Secure Authentication System" name="description" />
-    <meta content="LicenseAuth" name="author" />
+    <meta content="LicenseCore - Secure Authentication System" name="description" />
+    <meta content="LicenseCore" name="author" />
     <link rel="shortcut icon" href="<?= SITE_URL ?>/assets/images/favicon.ico">
     <script src="<?= SITE_URL ?>/assets/js/layout.js"></script>
     <link href="<?= SITE_URL ?>/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />

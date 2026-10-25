@@ -1,16 +1,28 @@
 <?php
-$seller_key = md5($ownerid);
+if (!$selected_app_data) {
+    echo '<div class="text-center py-5"><i class="ri-apps-line fs-1 text-muted mb-3 d-block"></i><h5 class="text-muted">Select an application first</h5><p class="text-muted">Choose an application to view its seller key and link.</p></div>';
+    return;
+}
+$seller_key = $selected_app_data['seller_key'] ?? substr(hash('sha256', 'LicenseCore:seller:' . $selected_app_data['secret']), 0, 32);
+if (empty($_SESSION['seller_csrf'])) $_SESSION['seller_csrf'] = bin2hex(random_bytes(32));
 $seller_link = SITE_URL . '/api/seller/?sellerkey=' . $seller_key . '&type=add&expiry=1&mask=******-******-******-******-******-******&level=1&amount=1&character=&note=&format=json';
 ?>
 <div class="row">
     <div class="col-lg-12">
+        <?php if (!empty($seller_error)): ?>
+        <div class="alert alert-danger" role="alert"><?= htmlspecialchars($seller_error) ?></div>
+        <?php endif; ?>
+        <?php if (!empty($seller_success)): ?>
+        <div class="alert alert-success" role="status"><?= htmlspecialchars($seller_success) ?></div>
+        <?php endif; ?>
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">Seller Settings</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info" role="alert">
-                    Manage your seller settings here.
+                    Seller API for <strong><?= htmlspecialchars($selected_app_data['name']) ?></strong>.
+                    This key generates licenses only for this application. Use Refresh Seller Key below to replace it.
                     <br>
                     Join Our Discord server <a href="./?page=help" target="_blank"><strong>For Support</strong></a>
                 </div>
@@ -60,7 +72,32 @@ $seller_link = SITE_URL . '/api/seller/?sellerkey=' . $seller_key . '&type=add&e
                         </label>
                     </div>
                 </div>
+                <button data-bs-toggle="modal" type="button" data-bs-target="#reset-sellerkey" class="btn btn-danger waves-effect waves-light">
+                    <i class="ri-refresh-line" aria-hidden="true"></i> Refresh Seller Key
+                </button>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reset-sellerkey" tabindex="-1" aria-labelledby="reset-sellerkey-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" class="modal-content">
+            <input type="hidden" name="action" value="refresh_seller_key">
+            <input type="hidden" name="app" value="<?= htmlspecialchars($selected_app_data['secret']) ?>">
+            <input type="hidden" name="seller_csrf" value="<?= htmlspecialchars($_SESSION['seller_csrf']) ?>">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reset-sellerkey-title">Refresh Seller Key</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Generate a new seller key for <strong><?= htmlspecialchars($selected_app_data['name']) ?></strong>?</p>
+                <div class="alert alert-warning mb-0">The current seller key and link will stop working. Update your shop integrations with the new link afterward.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger"><i class="ri-refresh-line" aria-hidden="true"></i> Refresh Seller Key</button>
+            </div>
+        </form>
     </div>
 </div>

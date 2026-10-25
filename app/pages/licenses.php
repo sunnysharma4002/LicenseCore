@@ -5,7 +5,7 @@ if (!$selected_app_data) {
 }
 $app_secret = $selected_app_data['secret'];
 
-$stmt = $conn->prepare("SELECT *, UNIX_TIMESTAMP(created_at) AS created_ts FROM `keys` WHERE app = ? ORDER BY created_at DESC LIMIT 1000");
+$stmt = $conn->prepare("SELECT k.*, UNIX_TIMESTAMP(k.created_at) AS created_ts, (SELECT COUNT(*) FROM key_devices d WHERE d.key_id = k.id) AS device_count FROM `keys` k WHERE k.app = ? ORDER BY k.created_at DESC LIMIT 1000");
 $stmt->bind_param("s", $app_secret);
 $stmt->execute();
 $keys_result = $stmt->get_result();
@@ -102,8 +102,24 @@ $sub_levels = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                         </select>
                                     </div>
                                     <div class="form-group">
+                                        <div class="border rounded p-3 my-3">
+                                            <label for="create-device-limit" class="form-label fw-semibold"><i class="ri-computer-line me-1" aria-hidden="true"></i> Devices per key</label>
+                                            <p class="text-muted small mb-2">Choose how many devices can share each license.</p>
+                                            <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Device limit presets">
+                                                <?php foreach ([1, 2, 3, 5] as $limit): ?>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" data-device-preset="<?= $limit ?>" data-device-input="create-device-limit"><?= $limit === 1 ? '1 · Single device' : $limit . ' devices' ?></button>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <div class="input-group">
+                                                <input id="create-device-limit" type="number" min="1" max="1000" class="form-control" name="max_devices" value="1" required aria-describedby="create-device-help">
+                                                <span class="input-group-text">devices / key</span>
+                                            </div>
+                                            <small id="create-device-help" class="text-muted d-block mt-2">All devices share one expiry, starting on first successful login.</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
                                         <label class="control-label">License Note:</label>
-                                        <input type="text" maxlength="69" class="form-control" name="note" placeholder="Optional, e.g. this license was for Joe" value="">
+                                        <input type="text" maxlength="69" class="form-control" name="note" placeholder="Optional — defaults to N/A" value="">
                                     </div>
                                     <div class="form-group">
                                         <label class="control-label">License Expiry Unit:</label>
@@ -349,13 +365,14 @@ $sub_levels = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                             <th>Used On</th>
                             <th>Used By</th>
                             <th>Status</th>
+                            <th>Devices</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($keys)): ?>
                         <tr>
-                            <td colspan="9" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <i class="ri-key-line fs-1 text-muted mb-3 d-block"></i>
                                 <h6 class="text-muted">No license keys yet</h6>
                                 <p class="text-muted mb-3">Create your first license key to get started</p>
@@ -367,29 +384,21 @@ $sub_levels = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                 $is_expired = $expiry_ts > 0 ? ($expiry_ts < time()) : false;
                                 $is_used = !empty($key['used_by']);
                                 $is_banned = intval($key['banned'] ?? 0) === 1;
-                                $duration_display = '';
-                                if ($expiry_ts > 0) {
-                                    $created_ts = intval($key['created_ts'] ?? 0);
-                                    $total_duration = $expiry_ts - $created_ts;
-                                    if ($total_duration > 0) {
-                                        $days = floor($total_duration / 86400);
-                                        $hours = floor(($total_duration % 86400) / 3600);
-                                        $duration_display = $days > 0 ? "$days days" : "$hours hours";
-                                    } else {
-                                        $duration_display = 'Expired';
-                                    }
-                                } else {
-                                    $duration_display = 'Lifetime';
-                                }
+                                $duration = intval($key['duration_seconds'] ?? 0);
+                                $duration_display = $duration > 0 ? time_conversion($duration) : 'Lifetime';
+                                if (empty($key['used_at'])) $duration_display .= ' ';
+                                $device_count = intval($key['device_count']);
+                                $device_limit = max(1, intval($key['max_devices']));
+                                $slots_full = $device_count >= $device_limit;
                             ?>
                             <tr>
-                                <td><code><?= htmlspecialchars($key['license_key']) ?></code></td>
+                                <td><code class="text-white"><?= htmlspecialchars($key['license_key']) ?></code></td>
                                 <td><?= date('Y-m-d H:i', strtotime($key['created_at'])) ?></td>
                                 <td><?= htmlspecialchars($key['created_by'] ?? '-') ?></td>
                                 <td><?= $duration_display ?></td>
-                                <td><?= htmlspecialchars($key['note'] ?? 'N/A') ?></td>
+                                <td><?= htmlspecialchars(trim($key['note'] ?? '') !== '' ? $key['note'] : 'N/A') ?></td>
                                 <td><?= !empty($key['used_at']) ? date('Y-m-d H:i', strtotime($key['used_at'])) : 'N/A' ?></td>
-                                <td><?= $is_used ? htmlspecialchars($key['used_by']) : 'N/A' ?></td>
+                                <td><?= $is_used ? htmlspecialchars($key['used_by'] === 'license_api' ? 'Same as key' : $key['used_by']) : 'N/A' ?></td>
                                 <td>
                                     <?php if ($is_banned): ?>
                                         <span class="badge bg-dark-subtle text-dark">Banned</span>
@@ -400,6 +409,16 @@ $sub_levels = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                     <?php else: ?>
                                         <span class="badge bg-success-subtle text-success">Active</span>
                                     <?php endif; ?>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-soft-<?= $slots_full ? 'warning' : 'primary' ?> text-start text-nowrap w-100"
+                                        data-bs-toggle="modal" data-bs-target="#manage-key-devices"
+                                        data-key-id="<?= intval($key['id']) ?>" data-license-key="<?= htmlspecialchars($key['license_key'], ENT_QUOTES, 'UTF-8') ?>"
+                                        data-device-limit="<?= $device_limit ?>" data-device-count="<?= $device_count ?>"
+                                        aria-label="Manage devices for <?= htmlspecialchars($key['license_key'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <span class="d-flex align-items-center gap-2"><i class="ri-computer-line" aria-hidden="true"></i><strong><?= $device_count ?> / <?= $device_limit ?></strong><i class="ri-settings-3-line ms-auto" aria-hidden="true"></i></span>
+                                        <small class="d-block mt-1"><?= $slots_full ? 'All slots used' : ($device_limit === 1 ? 'Single device' : 'Multi-device') ?></small>
+                                    </button>
                                 </td>
                                 <td>
                                     <div class="dropdown">
@@ -423,7 +442,81 @@ $sub_levels = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
 
+<div class="modal fade" id="manage-key-devices" tabindex="-1" aria-labelledby="manage-key-devices-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" class="modal-content">
+            <input type="hidden" name="action" value="set_key_devices">
+            <input type="hidden" name="key_id" id="device-key-id">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manage-key-devices-title"><i class="ri-computer-line me-2" aria-hidden="true"></i>Manage devices</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="bg-light-subtle border rounded p-3 mb-4">
+                    <div class="text-muted small mb-1">LICENSE KEY</div>
+                    <code id="device-license-key" class="text-break"></code>
+                    <div class="d-flex align-items-center justify-content-between mt-3">
+                        <span class="text-muted small">Registered devices</span>
+                        <span id="device-usage" class="badge bg-primary-subtle text-primary"></span>
+                    </div>
+                </div>
+                <label for="edit-device-limit" class="form-label fw-semibold">Maximum devices</label>
+                <p class="text-muted small">Allow this key to be used on one device or shared across several devices.</p>
+                <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Device limit presets">
+                    <?php foreach ([1, 2, 3, 5] as $limit): ?>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-device-preset="<?= $limit ?>" data-device-input="edit-device-limit"><?= $limit === 1 ? '1 · Single device' : $limit . ' devices' ?></button>
+                    <?php endforeach; ?>
+                </div>
+                <div class="input-group mb-2">
+                    <input type="number" id="edit-device-limit" name="max_devices" class="form-control" min="1" max="1000" required aria-describedby="device-limit-help">
+                    <span class="input-group-text">devices</span>
+                </div>
+                <small id="device-limit-help" class="text-muted">Choose 1–1,000 devices. Returning devices do not use another slot.</small>
+                <div id="device-limit-warning" class="alert alert-warning small mt-3 mb-0" role="status" hidden>Devices beyond the new limit will be rejected on their next key login. The original device keeps priority. Setting the limit to 1 allows only the original device.</div>
+                <p class="text-muted small mt-3 mb-0"><i class="ri-time-line me-1" aria-hidden="true"></i>All devices share the same license expiry.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="ri-check-line me-1" aria-hidden="true"></i>Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function updateDevicePresets(input) {
+    document.querySelectorAll('[data-device-input="' + input.id + '"]').forEach(function(button) {
+        const selected = Number(button.dataset.devicePreset) === Number(input.value);
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+    });
+    if (input.id === 'edit-device-limit') {
+        document.getElementById('device-limit-warning').hidden = Number(input.value) >= Number(input.dataset.used || 0);
+    }
+}
+document.querySelectorAll('[data-device-preset]').forEach(function(button) {
+    button.addEventListener('click', function() {
+        const input = document.getElementById(button.dataset.deviceInput);
+        input.value = button.dataset.devicePreset;
+        updateDevicePresets(input);
+    });
+});
+['create-device-limit', 'edit-device-limit'].forEach(function(id) {
+    const input = document.getElementById(id);
+    input.addEventListener('input', function() { updateDevicePresets(input); });
+    updateDevicePresets(input);
+});
+document.getElementById('manage-key-devices').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    if (!button) return;
+    document.getElementById('device-key-id').value = button.dataset.keyId;
+    document.getElementById('device-license-key').textContent = button.dataset.licenseKey;
+    document.getElementById('device-usage').textContent = button.dataset.deviceCount + ' / ' + button.dataset.deviceLimit + ' used';
+    const input = document.getElementById('edit-device-limit');
+    input.value = button.dataset.deviceLimit;
+    input.dataset.used = button.dataset.deviceCount;
+    updateDevicePresets(input);
+});
 function bankey(key) {
     $('.bankey').attr('value', key);
 }
@@ -437,7 +530,7 @@ $(document).ready(function() {
         pageLength: 25,
         order: [[1, 'desc']],
         columnDefs: [
-            { orderable: false, targets: [8] }
+            { orderable: false, targets: [8, 9] }
         ]
     });
 });

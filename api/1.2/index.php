@@ -5,14 +5,61 @@
  * Supports: Init, Register, Login, License, Check, Variables, Webhooks, Chat, Download
  */
 
-// Set error handler before anything else
+// Call inside a transaction after locking the key row with FOR UPDATE.
+function activate_license_key($conn, $license) {
+    if (empty($license['used_at'])) {
+        $duration = (int)$license['duration_seconds'];
+        $license['expiry'] = $duration > 0 ? time() + $duration : 0;
+        $stmt = $conn->prepare("UPDATE `keys` SET expiry = ?, used_at = NOW() WHERE id = ?");
+        $stmt->bind_param('ii', $license['expiry'], $license['id']);
+        $stmt->execute();
+    }
+    return $license;
+}
+
+function bind_license_device($conn, $license, $hwid, $legacy_hwid = '') {
+    if (!is_string($hwid) || trim($hwid) === '') {
+        throw new RuntimeException('Hardware ID required for license login');
+    }
+    $limit = max(1, (int)$license['max_devices']);
+    if ($limit === 1 && $legacy_hwid !== '' && !hash_equals($legacy_hwid, $hwid)) {
+        throw new RuntimeException('HWID NOT MATCH ASK FOR RESET');
+    }
+    // Preserve the original device binding when upgrading existing keys.
+    $stmt = $conn->prepare('INSERT IGNORE INTO key_devices (key_id, hwid_hash) VALUES (?, ?)');
+    if ($legacy_hwid !== '') {
+        $hash = hash('sha256', $legacy_hwid);
+        $stmt->bind_param('is', $license['id'], $hash);
+        $stmt->execute();
+    }
+    $hash = hash('sha256', $hwid);
+    // The original binding takes priority; lowering the limit disables excess devices.
+    $original_hash = $legacy_hwid !== '' ? hash('sha256', $legacy_hwid) : '';
+    $check = $conn->prepare('SELECT hwid_hash FROM key_devices WHERE key_id = ? ORDER BY (hwid_hash = ?) DESC, created_at ASC, hwid_hash ASC');
+    $check->bind_param('is', $license['id'], $original_hash);
+    $check->execute();
+    $devices = array_column($check->get_result()->fetch_all(MYSQLI_ASSOC), 'hwid_hash');
+    if (in_array($hash, array_slice($devices, 0, $limit), true)) return;
+    if (count($devices) >= $limit) {
+        throw new RuntimeException('HWID NOT MATCH ASK FOR RESET');
+    }
+    $stmt->bind_param('is', $license['id'], $hash);
+    $stmt->execute();
+}
+
+// Allow CLI regression checks to load the functions without handling a request.
+if (PHP_SAPI === 'cli' && defined('LICENSECORE_API_FUNCTIONS_ONLY') && LICENSECORE_API_FUNCTIONS_ONLY) {
+    return;
+}
+
+// Set error handler before processing requests
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
 ini_set('error_log', dirname(__FILE__) . '/../../logs/api_errors.log');
 
 // Set timezone to IST
-date_default_timezone_set('Asia/Calcutta');
+date_default_timezone_set('Asia/Kolkata');
 
 // Global exception handler
 set_exception_handler(function($exception) {
@@ -210,6 +257,8 @@ function initialize_session($app_secret) {
 
 function register_user($app_secret, $username, $key, $password, $hwid = null, $email = null) {
     global $conn;
+    $conn->begin_transaction();
+    try {
     
     // Validate input
     if (strlen($username) < 3 || strlen($username) > 70) {
@@ -225,7 +274,7 @@ function register_user($app_secret, $username, $key, $password, $hwid = null, $e
     }
     
     // Validate license key
-    $stmt = $conn->prepare("SELECT * FROM `keys` WHERE app = ? AND license_key = ? AND status = 'active'");
+    $stmt = $conn->prepare("SELECT * FROM `keys` WHERE app = ? AND license_key = ? AND status = 'active' AND used_at IS NULL FOR UPDATE");
     $stmt->bind_param("ss", $app_secret, $key);
     $stmt->execute();
     $key_result = $stmt->get_result();
@@ -260,7 +309,8 @@ function register_user($app_secret, $username, $key, $password, $hwid = null, $e
     
     if ($stmt->execute()) {
         // Update key as used
-        $stmt = $conn->prepare("UPDATE keys SET status = 'inactive', used_by = ?, used_at = NOW() WHERE id = ?");
+        $key_data = activate_license_key($conn, $key_data);
+        $stmt = $conn->prepare("UPDATE `keys` SET status = 'inactive', used_by = ? WHERE id = ?");
         $stmt->bind_param("si", $username, $key_data['id']);
         $stmt->execute();
         
@@ -275,11 +325,15 @@ function register_user($app_secret, $username, $key, $password, $hwid = null, $e
         
         // Log action
         log_action($app_secret, 'register', $username, 'User registered', $ip);
+        $conn->commit();
         
         return ['success' => true, 'message' => 'User registered successfully'];
     }
     
     return ['success' => false, 'message' => 'Registration failed'];
+    } finally {
+        $conn->rollback();
+    }
 }
 
 function login_user($app_secret, $username, $password, $hwid = null) {
@@ -501,14 +555,15 @@ switch ($type_param) {
             // Validate license key directly (KeyAuth style)
             // Note: License validation doesn't require a session in KeyAuth
             $key = sanitize($input_data['key'] ?? $_GET['key'] ?? '');
-            $hwid = sanitize($input_data['hwid'] ?? $_GET['hwid'] ?? null);
+            $hwid = sanitize($input_data['hwid'] ?? $_GET['hwid'] ?? '');
 
         if (empty($key)) {
             send_response(false, "License key required", null, $response_enckey);
         }
         
-        // Get license key from database
-        $stmt = $conn->prepare("SELECT * FROM `keys` WHERE app = ? AND license_key = ?");
+        $conn->begin_transaction();
+        // Serialize activation and device allocation for this key.
+        $stmt = $conn->prepare("SELECT * FROM `keys` WHERE app = ? AND license_key = ? FOR UPDATE");
         $stmt->bind_param("ss", $app_secret, $key);
         $stmt->execute();
         $key_result = $stmt->get_result();
@@ -530,9 +585,15 @@ switch ($type_param) {
         }
         
         $license = $key_result->fetch_assoc();
+        if (intval($license['banned'] ?? 0) === 1 || $license['status'] === 'expired') {
+            throw new RuntimeException('License key is disabled');
+        }
+        if (!empty($license['used_by']) && $license['used_by'] !== 'license_api') {
+            throw new RuntimeException('License key has already been redeemed by an account');
+        }
         
         // Check if key is expired
-        if ($license['expiry'] > 0 && $license['expiry'] < time()) {
+        if (!empty($license['used_at']) && $license['expiry'] > 0 && $license['expiry'] <= time()) {
             log_action($app_secret, 'license_expired', $key, "Expired license key attempt", get_ip());
             send_response(false, "License key has expired", null, $response_enckey);
         }
@@ -564,23 +625,21 @@ switch ($type_param) {
                 log_action($app_secret, 'license_paused', $key, 'Paused user attempted license', get_ip());
                 send_response(false, 'User is paused', null, $response_enckey);
             }
-            // Check HWID binding (if key was already bound to a different HWID)
-            $stored_hwid = $existing_user['hwid'] ?? '';
-            if (!empty($stored_hwid) && !empty($hwid) && $stored_hwid !== $hwid) {
-                log_action($app_secret, 'license_hwid_mismatch', $key, "HWID mismatch: stored=$stored_hwid vs incoming=$hwid", get_ip());
-                send_response(false, 'This license is already bound to another PC', null, $response_enckey);
-            }
+            bind_license_device($conn, $license, $hwid, $existing_user['hwid'] ?? '');
             // Update existing user
-            $stmt = $conn->prepare("UPDATE users SET hwid = ?, ip = ?, last_login = NOW() WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE users SET hwid = COALESCE(NULLIF(hwid, ''), ?), ip = ?, last_login = NOW() WHERE id = ?");
             $stmt->bind_param("ssi", $hwid, $ip, $existing_user['id']);
             $stmt->execute();
         } else {
             // Create new user record
-            $stmt = $conn->prepare("INSERT INTO users (app, username, hwid, ip, created_at, last_login) VALUES (?, ?, ?, ?, NOW(), NOW())");
-            $stmt->bind_param("ssss", $app_secret, $license_username, $hwid, $ip);
+            bind_license_device($conn, $license, $hwid);
+            $password_hash = hash_password(bin2hex(random_bytes(32)));
+            $stmt = $conn->prepare("INSERT INTO users (app, username, password, hwid, ip, created_at, last_login) VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
+            $stmt->bind_param("sssss", $app_secret, $license_username, $password_hash, $hwid, $ip);
             $stmt->execute();
         }
         
+        $license = activate_license_key($conn, $license);
         // Create or update subscription from key expiry
         $sub_expiry = intval($license['expiry'] ?? 0);
         $sub_name = 'default';
@@ -602,7 +661,7 @@ switch ($type_param) {
         }
 
         // Mark key as used (status stays inactive, but license() still accepts it)
-        $stmt = $conn->prepare("UPDATE `keys` SET used_by = 'license_api', used_at = NOW(), status = 'inactive' WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE `keys` SET used_by = 'license_api', status = 'inactive' WHERE id = ?");
         $stmt->bind_param("i", $license['id']);
         $stmt->execute();
 
@@ -630,10 +689,13 @@ switch ($type_param) {
 
         error_log('License response: ' . json_encode($user_data));
         log_action($app_secret, 'license_valid', $key, "Valid license used", $ip);
+        $conn->commit();
         send_response(true, "License is valid", $user_data, $response_enckey, false, 'info');  // Place under 'info' for C# client
         } catch (Exception $e) {
+            $conn->rollback();
             error_log('License endpoint error: ' . $e->getMessage());
-            send_response(false, "License validation failed: " . $e->getMessage(), null, $response_enckey);
+            $message = $e instanceof RuntimeException ? $e->getMessage() : 'License validation failed';
+            send_response(false, $message, null, $response_enckey);
         }
         break;
     

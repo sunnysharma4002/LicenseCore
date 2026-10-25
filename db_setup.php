@@ -1,25 +1,29 @@
 <?php
 /**
- * LicenseAuth - Database Setup Script
- * Creates all necessary tables for license management system
+ * LicenseCore - Database Setup Script
+ * Unified database setup (including the former db_enhanced.php schema).
+ * Creates missing tables without replacing existing data.
  */
 
+define('LICENSECORE_DATABASE_SETUP', true);
 require_once __DIR__ . '/includes/config.php';
+if (PHP_SAPI !== 'cli') header('Content-Type: text/plain; charset=utf-8');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+try {
 
 $setup_conn = new mysqli(DB_HOST, DB_USER, DB_PASS);
 
-if ($setup_conn->connect_error) {
-    die("Connection failed: " . $setup_conn->connect_error);
+$setup_conn->set_charset('utf8mb4');
+$setup_conn->query("SET time_zone = '+05:30'");
+try {
+    // Hosting accounts may select an existing database without CREATE privileges.
+    $setup_conn->select_db(DB_NAME);
+} catch (mysqli_sql_exception $e) {
+    if ($e->getCode() !== 1049) throw $e;
+    $database = '`' . str_replace('`', '``', DB_NAME) . '`';
+    $setup_conn->query("CREATE DATABASE IF NOT EXISTS $database CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    $setup_conn->select_db(DB_NAME);
 }
-
-$sql = "CREATE DATABASE IF NOT EXISTS " . DB_NAME;
-if ($setup_conn->query($sql) === TRUE) {
-    echo "✓ Database created successfully<br>";
-} else {
-    echo "✗ Error creating database: " . $setup_conn->error . "<br>";
-}
-
-$setup_conn->select_db(DB_NAME);
 
 $tables = [];
 
@@ -30,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `accounts` (
     `email` VARCHAR(255) UNIQUE NOT NULL,
     `password` VARCHAR(255) NOT NULL,
     `ownerid` VARCHAR(10) UNIQUE NOT NULL,
-    `role` ENUM('owner', 'manager', 'developer', 'tester', 'seller') DEFAULT 'owner',
+    `role` ENUM('owner', 'manager', 'developer', 'tester', 'seller', 'reseller') DEFAULT 'owner',
     `expires` BIGINT DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `last_login` TIMESTAMP NULL,
@@ -50,6 +54,7 @@ $tables['apps'] = "
 CREATE TABLE IF NOT EXISTS `apps` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `secret` VARCHAR(64) UNIQUE NOT NULL,
+    `seller_key` CHAR(32) CHARACTER SET ascii COLLATE ascii_bin UNIQUE DEFAULT NULL,
     `name` VARCHAR(100) NOT NULL,
     `ownerid` VARCHAR(10) NOT NULL,
     `version` VARCHAR(20) DEFAULT '1.0',
@@ -108,6 +113,9 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ";
 
+// Retain the enhanced install's end_users table for legacy integrations.
+$tables['end_users'] = str_replace('CREATE TABLE IF NOT EXISTS `users`', 'CREATE TABLE IF NOT EXISTS `end_users`', $tables['users']);
+
 $tables['keys'] = "
 CREATE TABLE IF NOT EXISTS `keys` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -116,17 +124,33 @@ CREATE TABLE IF NOT EXISTS `keys` (
     `owner` VARCHAR(100),
     `status` ENUM('active', 'inactive', 'expired') DEFAULT 'active',
     `expiry` BIGINT DEFAULT 0,
+    `duration_seconds` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `max_devices` INT UNSIGNED NOT NULL DEFAULT 1,
+    `note` VARCHAR(255) DEFAULT 'N/A',
+    `level` INT DEFAULT 1,
+    `banned` BOOLEAN DEFAULT 0,
+    `ban_reason` TEXT,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `created_by` VARCHAR(70),
     `used_by` VARCHAR(70),
     `used_at` TIMESTAMP NULL,
     `reset` BOOLEAN DEFAULT 0,
-    `format` ENUM('uuid', 'random', 'alphanum') DEFAULT 'random',
+    `format` ENUM('uuid', 'random', 'alphanum', 'mask', 'imported') DEFAULT 'random',
     FOREIGN KEY (app) REFERENCES apps(secret) ON DELETE CASCADE,
     INDEX idx_app (app),
     INDEX idx_license_key (license_key),
     INDEX idx_status (status),
     INDEX idx_expiry (expiry)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+";
+
+$tables['key_devices'] = "
+CREATE TABLE IF NOT EXISTS `key_devices` (
+    `key_id` INT NOT NULL,
+    `hwid_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (key_id, hwid_hash),
+    FOREIGN KEY (key_id) REFERENCES `keys`(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ";
 
@@ -242,7 +266,7 @@ $tables['blacklist'] = "
 CREATE TABLE IF NOT EXISTS `blacklist` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `app` VARCHAR(64) NOT NULL,
-    `type` ENUM('hwid', 'ip', 'username') NOT NULL,
+    `type` ENUM('hwid', 'ip', 'username', 'key') NOT NULL,
     `value` VARCHAR(255) NOT NULL,
     `reason` TEXT,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -341,8 +365,23 @@ foreach ($tables as $name => $sql) {
     }
 }
 
+// Upgrade existing installations for independently refreshable seller keys.
+if ($setup_conn->query("SHOW COLUMNS FROM apps LIKE 'seller_key'")->num_rows === 0) {
+    $setup_conn->query("ALTER TABLE apps ADD seller_key CHAR(32) CHARACTER SET ascii COLLATE ascii_bin UNIQUE DEFAULT NULL");
+}
+
 echo "\n✅ Database setup completed!\n";
 echo "\nDatabase: " . DB_NAME . "\n";
 echo "Tables created: " . count($tables) . "\n";
+echo "\nNext steps:\n";
+echo "1. Visit " . SITE_URL . "/register.php to create your account\n";
+echo "2. Create your first application\n";
+echo "3. Generate and manage licenses\n";
+echo "4. Integrate with the API\n";
 
 $setup_conn->close();
+} catch (mysqli_sql_exception $e) {
+    if (PHP_SAPI !== 'cli') http_response_code(500);
+    echo "\nDatabase setup failed: " . $e->getMessage() . "\n";
+    exit(1);
+}

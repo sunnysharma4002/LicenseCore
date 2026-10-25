@@ -24,9 +24,42 @@ $app_success = '';
 $license_error = '';
 $license_success = '';
 $generated_keys = [];
+$seller_error = '';
+$seller_success = '';
 $action = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
+
+    if ($action === 'refresh_seller_key') {
+        $token = $_POST['seller_csrf'] ?? '';
+        $app_secret = sanitize($_POST['app'] ?? '');
+        if (!is_string($token) || empty($_SESSION['seller_csrf']) || !hash_equals($_SESSION['seller_csrf'], $token)) {
+            $seller_error = 'Please reload the page and try again.';
+        } elseif ($conn->query("SHOW COLUMNS FROM apps LIKE 'seller_key'")->num_rows === 0) {
+            $seller_error = 'Run the updated db_setup.php first, then refresh your seller key.';
+        } else {
+            $new_seller_key = bin2hex(random_bytes(16));
+            $stmt = $conn->prepare('UPDATE apps SET seller_key = ? WHERE secret = ? AND ownerid = ?');
+            $stmt->bind_param('sss', $new_seller_key, $app_secret, $ownerid);
+            $stmt->execute();
+            if ($stmt->affected_rows === 1) {
+                $seller_success = 'Seller key refreshed. Copy the new seller link into your integrations.';
+                $_SESSION['seller_csrf'] = bin2hex(random_bytes(32));
+                log_action($app_secret, 'seller_key_refreshed', $user['username'], 'Seller key rotated');
+            } else {
+                $seller_error = 'Application not found.';
+            }
+        }
+    }
+
+    if ($action === 'set_key_devices') {
+        $key_id = intval($_POST['key_id'] ?? 0);
+        $max_devices = max(1, min(1000, intval($_POST['max_devices'] ?? 1)));
+        $stmt = $conn->prepare("UPDATE `keys` k JOIN apps a ON a.secret = k.app SET k.max_devices = ? WHERE k.id = ? AND a.ownerid = ?");
+        $stmt->bind_param('iis', $max_devices, $key_id, $ownerid);
+        $stmt->execute();
+        $license_success = 'Device limit saved. Devices beyond this limit will be rejected on their next key login.';
+    }
 
     // Create application
     if ($action === 'create_app') {
@@ -134,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $amount = min(max(intval($_POST['amount'] ?? 1), 1), 100);
         $level = min(max(intval($_POST['level'] ?? 1), 1), 5);
         $note = sanitize($_POST['note'] ?? '');
+        if ($note === '') $note = 'N/A';
         $key_format = sanitize($_POST['format'] ?? 'default');
 
         // Normalize format to match generator
@@ -150,15 +184,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($app_check->num_rows > 0) {
             // Determine expiry interval
             $unit = $duration_unit === 'hours' ? 'hours' : 'days';
-            $expiry_ts = time() + ($duration * ($unit === 'hours' ? 3600 : 86400));
+            $expiry_ts = $duration * ($unit === 'hours' ? 3600 : 86400);
+            $max_devices = max(1, min(1000, intval($_POST['max_devices'] ?? 1)));
 
             // Generate multiple keys
             for ($i = 0; $i < $amount; $i++) {
                 $license_key = generate_license_key($key_format);
                 $status = 'active';
 
-                $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, expiry, status, format, created_by) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ssisss", $app_secret, $license_key, $expiry_ts, $status, $key_format, $user['username']);
+                $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, duration_seconds, status, format, created_by, max_devices, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssisssis", $app_secret, $license_key, $expiry_ts, $status, $key_format, $user['username'], $max_devices, $note);
 
                 if ($stmt->execute()) {
                     $generated_keys[] = $license_key;
@@ -208,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->bind_param("ss", $app_secret, $ownerid);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
-            $stmt = $conn->prepare("UPDATE `keys` SET expiry = expiry + ? WHERE app = ? AND status = 'active' AND expiry > 0");
+            $stmt = $conn->prepare("UPDATE `keys` SET duration_seconds = duration_seconds + ? WHERE app = ? AND status = 'active' AND used_at IS NULL AND duration_seconds > 0");
             $stmt->bind_param("is", $seconds, $app_secret);
             if ($stmt->execute()) {
                 $license_success = 'Time added to all active keys successfully!';
@@ -228,14 +263,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $duration = max(intval($_POST['duration'] ?? 30), 1);
         $duration_unit = sanitize($_POST['duration_unit'] ?? 'days');
         $level = min(max(intval($_POST['level'] ?? 1), 1), 5);
-        $expiry_ts = time() + ($duration * ($duration_unit === 'hours' ? 3600 : 86400));
+        $expiry_ts = $duration * ($duration_unit === 'hours' ? 3600 : 86400);
         $imported = 0;
         $stmt = $conn->prepare("SELECT secret FROM apps WHERE secret = ? AND ownerid = ?");
         $stmt->bind_param("ss", $app_secret, $ownerid);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
             $lines = explode("\n", $keys_list);
-            $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, expiry, status, format, created_by) VALUES (?, ?, ?, 'active', 'imported', ?)");
+            $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, duration_seconds, status, format, created_by) VALUES (?, ?, ?, 'active', 'imported', ?)");
             $stmt->bind_param("ssis", $app_secret, $license_key, $expiry_ts, $user['username']);
             foreach ($lines as $line) {
                 $license_key = trim($line);
@@ -559,6 +594,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mask = sanitize($_POST['mask'] ?? '');
         $level = intval($_POST['level'] ?? 1);
         $note = sanitize($_POST['note'] ?? '');
+        if ($note === '') $note = 'N/A';
         $expiry_unit = intval($_POST['expiry'] ?? 86400);
         $duration_val = max(intval($_POST['duration'] ?? 1), 1);
         $lowercase = isset($_POST['lowercaseLetters']);
@@ -566,7 +602,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $chars = '0123456789';
         if ($lowercase) $chars .= 'abcdefghijklmnopqrstuvwxyz';
         if ($capital) $chars .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $expiry_ts = $expiry_unit === 315569260 ? 0 : (time() + ($duration_val * $expiry_unit));
+        $expiry_ts = $expiry_unit === 315569260 ? 0 : ($duration_val * max(1, $expiry_unit));
+        $max_devices = max(1, min(1000, intval($_POST['max_devices'] ?? 1)));
 
         if ($amount > 10 && ($user['role'] ?? '') === 'tester') {
             $license_error = 'Tester accounts are limited to 10 keys at once';
@@ -599,8 +636,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
                         $fmt = 'mask';
-                        $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, expiry, status, format, created_by, note, level) VALUES (?, ?, ?, 'active', ?, ?, ?, ?)");
-                        $stmt->bind_param("ssisssi", $selected_app, $key, $expiry_ts, $fmt, $user['username'], $note, $level);
+                        $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, duration_seconds, status, format, created_by, note, level, max_devices) VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)");
+                        $stmt->bind_param("ssisssii", $selected_app, $key, $expiry_ts, $fmt, $user['username'], $note, $level, $max_devices);
                         $stmt->execute();
                         $generated_keys[] = $key;
                     }
@@ -636,9 +673,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $lk = $item['license'] ?? $item['key'] ?? '';
                             $lv = intval($item['level'] ?? 1);
                             $days = intval($item['days'] ?? 30);
-                            $exp = time() + ($days * 86400);
+                            $exp = max(0, $days) * 86400;
                             if (!empty($lk)) {
-                                $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, expiry, status, format, created_by) VALUES (?, ?, ?, 'active', 'imported', ?)");
+                                $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, duration_seconds, status, format, created_by) VALUES (?, ?, ?, 'active', 'imported', ?)");
                                 $stmt->bind_param("ssis", $selected_app, $lk, $exp, $user['username']);
                                 $stmt->execute();
                                 $imported++;
@@ -653,9 +690,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $lk = trim($fields[0]);
                             $lv = isset($fields[1]) ? intval(trim($fields[1])) : 1;
                             $days = isset($fields[2]) ? intval(trim($fields[2])) : 30;
-                            $exp = time() + ($days * 86400);
+                            $exp = max(0, $days) * 86400;
                             if (!empty($lk)) {
-                                $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, expiry, status, format, created_by) VALUES (?, ?, ?, 'active', 'imported', ?)");
+                                $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, duration_seconds, status, format, created_by) VALUES (?, ?, ?, 'active', 'imported', ?)");
                                 $stmt->bind_param("ssis", $selected_app, $lk, $exp, $user['username']);
                                 $stmt->execute();
                                 $imported++;
@@ -685,10 +722,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             if ($stmt->get_result()->num_rows > 0) {
                 if ($seconds >= 315569260) {
-                    $stmt = $conn->prepare("UPDATE `keys` SET expiry = 0 WHERE app = ? AND status = 'active'");
+                    $stmt = $conn->prepare("UPDATE `keys` SET expiry = 0, duration_seconds = 0 WHERE app = ? AND status = 'active' AND used_at IS NULL");
                     $stmt->bind_param("s", $selected_app);
                 } else {
-                    $stmt = $conn->prepare("UPDATE `keys` SET expiry = expiry + ? WHERE app = ? AND status = 'active' AND expiry > 0");
+                    $stmt = $conn->prepare("UPDATE `keys` SET duration_seconds = duration_seconds + ? WHERE app = ? AND status = 'active' AND used_at IS NULL AND duration_seconds > 0");
                     $stmt->bind_param("is", $seconds, $selected_app);
                 }
                 $stmt->execute();

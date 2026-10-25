@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Check 2FA if enabled
                 if ($user['twofactor_enabled']) {
-                    $twofactor_code = sanitize($_POST['licenseauthtwofactor'] ?? '');
+                    $twofactor_code = sanitize($_POST['licensecoretwofactor'] ?? '');
                     if (empty($twofactor_code)) {
                         $error = '2FA code is required';
                     } else {
@@ -79,8 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8" />
     <title>Sign In - <?= SITE_NAME ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="LicenseAuth - Secure Authentication System" name="description" />
-    <meta content="LicenseAuth" name="author" />
+    <meta content="LicenseCore - Secure Authentication System" name="description" />
+    <meta content="LicenseCore" name="author" />
     <link rel="shortcut icon" href="<?= SITE_URL ?>/assets/images/favicon.ico">
     <script src="<?= SITE_URL ?>/assets/js/layout.js"></script>
     <link href="<?= SITE_URL ?>/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         </div>
                                         <div class="mb-3">
                                             <label for="username" class="form-label">2FA Authenticator</label>
-                                            <input type="text" class="form-control" name="licenseauthtwofactor" placeholder="Enter 2FA If You Enable">
+                                            <input type="text" class="form-control" name="licensecoretwofactor" placeholder="Enter 2FA If You Enable">
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" value="" id="auth-remember-check">

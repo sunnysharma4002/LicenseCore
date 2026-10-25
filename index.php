@@ -9,10 +9,10 @@ if (is_logged_in()) {
 <html lang="en" data-bs-theme="dark" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 <head>
     <meta charset="utf-8" />
-    <title>LicenseAuth | Secure Authentication System</title>
+    <title>LicenseCore | Secure Authentication System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="LicenseAuth - Secure Authentication System, C++, C#, Python, PHP, Ruby, JavaScript, VB.Net, Java, Rush, Go, Lua, Perl" name="description" />
-    <meta content="LicenseAuth" name="author" />
+    <meta content="LicenseCore - Secure Authentication System, C++, C#, Python, PHP, Ruby, JavaScript, VB.Net, Java, Rush, Go, Lua, Perl" name="description" />
+    <meta content="LicenseCore" name="author" />
     <link rel="shortcut icon" href="<?= SITE_URL ?>/assets/images/favicon.ico">
     <script src="<?= SITE_URL ?>/assets/js/layout.js"></script>
     <link href="<?= SITE_URL ?>/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />

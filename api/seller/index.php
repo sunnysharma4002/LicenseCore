@@ -1,7 +1,7 @@
 <?php
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
-date_default_timezone_set('Asia/Calcutta');
+date_default_timezone_set('Asia/Kolkata');
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -29,8 +29,8 @@ if (empty($sellerkey)) {
     exit;
 }
 
-// Look up account by seller key (md5 of ownerid)
-$stmt = $conn->prepare("SELECT * FROM accounts WHERE MD5(ownerid) = ?");
+// Resolve the application directly from its seller key, then check its owner.
+$stmt = $conn->prepare("SELECT accounts.*, apps.secret AS seller_app_secret FROM apps JOIN accounts ON accounts.ownerid = apps.ownerid WHERE COALESCE(apps.seller_key, LEFT(SHA2(CONCAT('LicenseCore:seller:', apps.secret), 256), 32)) = ?");
 $stmt->bind_param("s", $sellerkey);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -42,6 +42,7 @@ if ($result->num_rows === 0) {
 
 $account = $result->fetch_assoc();
 $ownerid = $account['ownerid'];
+$app_secret = $account['seller_app_secret'];
 
 // Check if account is expired
 if ($account['expires'] > 0 && $account['expires'] < time()) {
@@ -50,37 +51,35 @@ if ($account['expires'] > 0 && $account['expires'] < time()) {
 }
 
 if ($type === 'add') {
-    // Determine format from mask
-    $key_format = 'uuid';
-    if (strpos($mask, '******-******-******-******-******-******') !== false) {
-        $key_format = 'uuid';
-    } elseif (strpos($mask, 'XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX') !== false) {
-        $key_format = 'alphanum';
+    // Preserve literal mask characters and randomize only '*' placeholders.
+    if ($mask !== '' && (strlen($mask) > 70 || strpos($mask, '*') === false)) {
+        echo json_encode(['success' => false, 'message' => 'Mask must contain * and be at most 70 characters']);
+        exit;
     }
+    $key_format = $mask === '' ? 'uuid' : 'mask';
+    $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-    // Calculate expiry timestamp
-    $expiry_ts = time() + ($expiry * 86400);
+    // Store duration; the countdown begins on first activation.
+    $expiry_ts = max(0, $expiry) * 86400;
+    $max_devices = max(1, min(1000, intval($_GET['max_devices'] ?? 1)));
 
     $generated_keys = [];
     for ($i = 0; $i < $amount; $i++) {
-        $license_key = generate_license_key($key_format);
+        if ($mask === '') {
+            $license_key = generate_license_key('uuid');
+        } else {
+            $license_key = $mask;
+            for ($j = 0; $j < strlen($license_key); $j++) {
+                if ($license_key[$j] === '*') {
+                    $license_key[$j] = $characters[random_int(0, strlen($characters) - 1)];
+                }
+            }
+        }
         $status = 'active';
 
-        // For seller, we need an app - use the first app
-        $stmt_app = $conn->prepare("SELECT secret FROM apps WHERE ownerid = ? LIMIT 1");
-        $stmt_app->bind_param("s", $ownerid);
-        $stmt_app->execute();
-        $app_result = $stmt_app->get_result();
-        if ($app_result->num_rows === 0) {
-            echo json_encode(['success' => false, 'message' => 'No applications found']);
-            exit;
-        }
-        $app_row = $app_result->fetch_assoc();
-        $app_secret = $app_row['secret'];
-
         $created_by = 'SellerAPI';
-        $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, expiry, status, format, created_by) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssisss", $app_secret, $license_key, $expiry_ts, $status, $key_format, $created_by);
+        $stmt = $conn->prepare("INSERT INTO `keys` (app, license_key, duration_seconds, status, format, created_by, max_devices) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssisssi", $app_secret, $license_key, $expiry_ts, $status, $key_format, $created_by, $max_devices);
         if ($stmt->execute()) {
             $generated_keys[] = $license_key;
         }
